@@ -10,6 +10,20 @@ static XPowersPMU pmu;
 static bool rtcOk = false;
 static bool pmuOk = false;
 
+static void configureBatteryCharger() {
+  if (!pmuOk) return;
+  pmu.setVbusCurrentLimit(XPOWERS_AXP2101_VBUS_CUR_LIM_900MA);
+  pmu.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_500MA);
+  pmu.setPrechargeCurr(XPOWERS_AXP2101_PRECHARGE_100MA);
+  pmu.setChargerTerminationCurr(XPOWERS_AXP2101_CHG_ITERM_100MA);
+  pmu.enableChargerTerminationLimit();
+  pmu.setChargeTargetVoltage(XPOWERS_AXP2101_CHG_VOL_4V2);
+  pmu.enableCellbatteryCharge();
+  Serial.printf("AXP2101 charger: vbusLim=%u chgCur=%u target=%u\n",
+                pmu.getVbusCurrentLimit(), pmu.getChargerConstantCurr(),
+                pmu.getChargeTargetVoltage());
+}
+
 bool rtcBegin() {
   rtcOk = rtc.begin(Wire, IIC_SDA, IIC_SCL);
   if (!rtcOk) Serial.println("PCF85063 no detectado");
@@ -43,6 +57,7 @@ void rtcSetEpoch(uint32_t e) {
 bool batBegin() {
   pmuOk = pmu.begin(Wire, AXP2101_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);
   if (!pmuOk) Serial.println("AXP2101 no detectado");
+  else configureBatteryCharger();
   return pmuOk;
 }
 

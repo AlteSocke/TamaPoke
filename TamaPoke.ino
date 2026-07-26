@@ -27,7 +27,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.27.4-wake-touch"
+#define FW_VERSION "1.27.5-charge-config"
 #define HELP_PAGE_COUNT 7
 #define HELP_LINE_COUNT 6
 
