@@ -478,6 +478,8 @@ make test
 All sprites: [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab)
 (community, CC BY-NC). Base stats: [PokéAPI](https://pokeapi.co). Pokémon is a ™ of
 Nintendo / Game Freak / The Pokémon Company. Non-commercial, personal-use project.
+Charging configuration issue spotted through ShadowEnemyx's hardware test video:
+[TikTok](https://pro.tiktok.com/t/ZGdxJB3nr/).
 Full list in [`CREDITS.md`](CREDITS.md).
 
 ## License
