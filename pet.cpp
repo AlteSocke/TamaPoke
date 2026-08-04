@@ -847,6 +847,107 @@ void Pet::applyBattleLoss() {
   save();
 }
 
+uint8_t Pet::expeditionEnergyCost(uint8_t minutes) {
+  if (minutes == 15) return 12;
+  if (minutes == 30) return 20;
+  if (minutes == 60) return 32;
+  return 0xFF;
+}
+
+bool Pet::expeditionActive(uint32_t nowEpoch) const {
+  return expeditionEndEpoch != 0 && nowEpoch < expeditionEndEpoch;
+}
+
+bool Pet::expeditionReady(uint32_t nowEpoch) const {
+  return expeditionEndEpoch != 0 && nowEpoch >= expeditionEndEpoch;
+}
+
+bool Pet::canReceiveExpeditionItem(ExpeditionItem item) const {
+  if (item >= EXP_ITEM_COUNT || itemCounts[item] >= EXP_ITEM_MAX) return false;
+  return item != EXP_ITEM_TRAIN || trAtk < 100 || trDef < 100 || trSpe < 100;
+}
+
+bool Pet::expeditionInventoryFull() const {
+  for (uint8_t i = 0; i < EXP_ITEM_COUNT; i++) {
+    if (canReceiveExpeditionItem((ExpeditionItem)i)) return false;
+  }
+  return true;
+}
+
+bool Pet::canStartExpedition(uint8_t minutes, uint32_t nowEpoch) const {
+  uint8_t cost = expeditionEnergyCost(minutes);
+  return cost != 0xFF && nowEpoch != 0 && !isEgg() && !sleeping && ceremony == CER_NONE &&
+         expeditionEndEpoch == 0 && energy >= cost && !expeditionInventoryFull();
+}
+
+uint8_t Pet::expeditionTrainingChance(uint8_t minutes) const {
+  uint8_t base = minutes == 15 ? 8 : minutes == 30 ? 15 : minutes == 60 ? 25 : 0;
+  if (!base) return 0;
+  uint16_t avg = ((uint16_t)fullness + joy + energy + hygiene) / 4;
+  if (avg >= 80 && bond >= 50) return minutes == 15 ? 18 : minutes == 30 ? 30 : 45;
+  if (avg >= 60 && bond >= 20) return minutes == 15 ? 13 : minutes == 30 ? 22 : 35;
+  return base;
+}
+
+bool Pet::startExpedition(uint8_t minutes, uint32_t nowEpoch, uint8_t luckRoll, uint8_t itemRoll) {
+  if (!canStartExpedition(minutes, nowEpoch)) return false;
+
+  uint8_t cost = expeditionEnergyCost(minutes);
+  ExpeditionItem reward = EXP_ITEM_NONE;
+  if (canReceiveExpeditionItem(EXP_ITEM_TRAIN) && luckRoll < expeditionTrainingChance(minutes)) {
+    reward = EXP_ITEM_TRAIN;
+  } else {
+    const ExpeditionItem common[] = { EXP_ITEM_SNACK, EXP_ITEM_ENERGY, EXP_ITEM_CARE };
+    uint8_t first = itemRoll % 3;
+    for (uint8_t i = 0; i < 3; i++) {
+      ExpeditionItem candidate = common[(first + i) % 3];
+      if (canReceiveExpeditionItem(candidate)) {
+        reward = candidate;
+        break;
+      }
+    }
+  }
+  if (reward == EXP_ITEM_NONE) return false;
+
+  energy -= cost;
+  expeditionEndEpoch = nowEpoch + (uint32_t)minutes * 60UL;
+  expeditionRewardItem = reward;
+  save();
+  return true;
+}
+
+ExpeditionItem Pet::claimExpedition(uint32_t nowEpoch) {
+  if (!expeditionReady(nowEpoch) || expeditionRewardItem >= EXP_ITEM_COUNT ||
+      !canReceiveExpeditionItem((ExpeditionItem)expeditionRewardItem)) return EXP_ITEM_NONE;
+  ExpeditionItem reward = (ExpeditionItem)expeditionRewardItem;
+  itemCounts[reward]++;
+  expeditionEndEpoch = 0;
+  expeditionRewardItem = EXP_ITEM_NONE;
+  save();
+  return reward;
+}
+
+bool Pet::useExpeditionItem(ExpeditionItem item, int8_t trainingStat) {
+  if (item >= EXP_ITEM_COUNT || itemCounts[item] == 0) return false;
+  if (item == EXP_ITEM_SNACK) {
+    fullness = clamp100((int)fullness + 25);
+    joy = clamp100((int)joy + 5);
+  } else if (item == EXP_ITEM_ENERGY) {
+    energy = clamp100((int)energy + 30);
+  } else if (item == EXP_ITEM_CARE) {
+    hygiene = clamp100((int)hygiene + 30);
+    if (poops > 0) poops--;
+  } else {
+    if (trainingStat == TRAIN_STAT_ATK && trAtk < 100) trAtk = clamp100((int)trAtk + 2);
+    else if (trainingStat == TRAIN_STAT_DEF && trDef < 100) trDef = clamp100((int)trDef + 2);
+    else if (trainingStat == TRAIN_STAT_SPE && trSpe < 100) trSpe = clamp100((int)trSpe + 2);
+    else return false;
+  }
+  itemCounts[item]--;
+  save();
+  return true;
+}
+
 void Pet::play() {
   if (ceremony != CER_NONE) return;
   if (isEgg() || sleeping) return;
@@ -953,6 +1054,9 @@ void Pet::save() {
   prefs.putBytes("dgtype", dailyGoalType, sizeof(dailyGoalType));
   prefs.putBytes("dgprog", dailyGoalProgress, sizeof(dailyGoalProgress));
   prefs.putUChar("dgdone", dailyGoalDone);
+  prefs.putBytes("items", itemCounts, sizeof(itemCounts));
+  prefs.putUInt("exend", expeditionEndEpoch);
+  prefs.putUChar("exrwd", expeditionRewardItem);
   prefs.putString("nick", nick);
 }
 
@@ -1028,6 +1132,16 @@ void Pet::load() {
     dailyGoalProgress[0] = dailyGoalProgress[1] = dailyGoalProgress[2] = 0;
   }
   dailyGoalDone = prefs.getUChar("dgdone", 0);
+  size_t gotItems = prefs.getBytes("items", itemCounts, sizeof(itemCounts));
+  if (gotItems != sizeof(itemCounts)) memset(itemCounts, 0, sizeof(itemCounts));
+  for (uint8_t i = 0; i < EXP_ITEM_COUNT; i++)
+    if (itemCounts[i] > EXP_ITEM_MAX) itemCounts[i] = EXP_ITEM_MAX;
+  expeditionEndEpoch = prefs.getUInt("exend", 0);
+  expeditionRewardItem = prefs.getUChar("exrwd", EXP_ITEM_NONE);
+  if (expeditionEndEpoch == 0 || expeditionRewardItem >= EXP_ITEM_COUNT) {
+    expeditionEndEpoch = 0;
+    expeditionRewardItem = EXP_ITEM_NONE;
+  }
   prefs.getString("nick", nick, sizeof(nick));
   // siembra: la mascota actual cuenta como criada (guardados antiguos)
   if (speciesId >= 1) registerSpecies(speciesId);

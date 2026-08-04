@@ -57,6 +57,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "META DEX %u", "BONUS DEX", "CONOCIDOS %u/151",
     "DEX", "TIPO", "CRIADO", "%u/%u",
     "CERCA!",
+    "EXPEDICION", "15 MIN", "30 MIN", "60 MIN", "VUELVE EN %um", "LISTO!",
+    "RECOGER", "MOCHILA", "MOCHILA LLENA", "FALTA ENE %u",
+    "SNACK RUTA", "TONICO ENERGIA", "KIT CUIDADO", "FICHA ENTRENO", "HALLADO: %s",
+    "ATQ", "DEF", "VEL", "AL MAX",
   },
   // ---------------- EN ----------------
   {
@@ -107,6 +111,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "DEX GOAL %u", "DEX REWARD", "KNOWN %u/151",
     "DEX", "TYPE", "RAISED", "%u/%u",
     "CLOSE!",
+    "EXPEDITION", "15 MIN", "30 MIN", "60 MIN", "BACK IN %um", "READY!",
+    "CLAIM", "INVENTORY", "INVENTORY FULL", "NEED ENE %u",
+    "TRAIL SNACK", "ENERGY TONIC", "CARE KIT", "TRAIN TOKEN", "FOUND: %s",
+    "ATK", "DEF", "SPD", "MAXED",
   },
   // ---------------- FR ----------------
   {
@@ -157,6 +165,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "BUT DEX %u", "BONUS DEX", "CONNUS %u/151",
     "DEX", "TYPE", "ELEVE", "%u/%u",
     "PRESQUE!",
+    "EXPEDITION", "15 MIN", "30 MIN", "60 MIN", "RETOUR %um", "PRET!",
+    "PRENDRE", "SAC", "SAC PLEIN", "ENE %u REQUIS",
+    "SNACK RANDO", "TONIC ENERGIE", "KIT SOIN", "JETON TRAIN", "TROUVE: %s",
+    "ATQ", "DEF", "VIT", "MAX",
   },
   // ---------------- DE ----------------
   {
@@ -207,6 +219,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "DEX ZIEL %u", "DEX BONUS", "BEKANNT %u/151",
     "DEX", "TYP", "AUFZ.", "%u/%u",
     "KNAPP!",
+    "EXPEDITION", "15 MIN", "30 MIN", "60 MIN", "ZURUECK %um", "BEREIT!",
+    "EINSAMMELN", "INVENTAR", "INVENTAR VOLL", "ENE %u NOETIG",
+    "WEGE-SNACK", "ENERGIE-TONIC", "PFLEGE-SET", "TRAINING-JETON", "FUND: %s",
+    "ANG", "VER", "INI", "MAX",
   },
   // ---------------- IT ----------------
   {
@@ -257,6 +273,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "OBIETTIVO DEX %u", "BONUS DEX", "VISTI %u/151",
     "DEX", "TIPO", "ALLEV.", "%u/%u",
     "QUASI!",
+    "SPEDIZIONE", "15 MIN", "30 MIN", "60 MIN", "TORNA %um", "PRONTA!",
+    "RITIRA", "ZAINO", "ZAINO PIENO", "SERVE ENE %u",
+    "SNACK VIAGGIO", "TONICO ENERGIA", "KIT CURA", "GETTONE ALLEN.", "TROVATO: %s",
+    "ATT", "DIF", "VEL", "MAX",
   },
   // ---------------- PT ----------------
   {
@@ -307,6 +327,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "META DEX %u", "BONUS DEX", "CONHECIDOS %u/151",
     "DEX", "TIPO", "CRIADO", "%u/%u",
     "PERTO!",
+    "EXPEDICAO", "15 MIN", "30 MIN", "60 MIN", "VOLTA EM %um", "PRONTO!",
+    "RECOLHER", "MOCHILA", "MOCHILA CHEIA", "FALTA ENE %u",
+    "SNACK TRILHA", "TONICO ENERGIA", "KIT CUIDADO", "FICHA TREINO", "ACHADO: %s",
+    "ATQ", "DEF", "VEL", "MAX",
   },
 };
 

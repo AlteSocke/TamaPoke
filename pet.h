@@ -44,6 +44,22 @@ enum DailyGoalType : uint8_t {
 };
 #define DAILY_GOAL_COUNT 3
 
+enum ExpeditionItem : uint8_t {
+  EXP_ITEM_SNACK = 0,
+  EXP_ITEM_ENERGY,
+  EXP_ITEM_CARE,
+  EXP_ITEM_TRAIN,
+  EXP_ITEM_NONE = 0xFF,
+};
+#define EXP_ITEM_COUNT 4
+#define EXP_ITEM_MAX 3
+
+enum TrainingStat : int8_t {
+  TRAIN_STAT_ATK = 0,
+  TRAIN_STAT_DEF,
+  TRAIN_STAT_SPE,
+};
+
 // medallas del individuo (bitmask)
 enum : uint16_t {
   MED_LV10 = 1 << 0, MED_LV25 = 1 << 1, MED_LV50 = 1 << 2,
@@ -113,6 +129,9 @@ public:
   uint8_t dailyGoalType[DAILY_GOAL_COUNT] = { DAILY_GOAL_CARE, DAILY_GOAL_PLAY, DAILY_GOAL_CATCH };
   uint8_t dailyGoalProgress[DAILY_GOAL_COUNT] = { 0, 0, 0 };
   uint8_t dailyGoalDone = 0;
+  uint8_t itemCounts[EXP_ITEM_COUNT] = { 0 };
+  uint32_t expeditionEndEpoch = 0;
+  uint8_t expeditionRewardItem = EXP_ITEM_NONE;
   bool saveLoadedFromNvs = false;
   bool saveCreatedThisBoot = false;
 
@@ -140,6 +159,18 @@ public:
   uint8_t trainStrength(uint16_t hits);  // saco de entrenamiento (entrena FUE)
   BattleReward applyBattleWin(int16_t wildDex, bool closeWin);
   void applyBattleLoss();
+
+  // Expediciones: el premio se sortea y guarda al salir para que un reinicio
+  // no permita repetir la tirada. Los rolls son inyectables para pruebas nativas.
+  static uint8_t expeditionEnergyCost(uint8_t minutes);
+  bool expeditionActive(uint32_t nowEpoch) const;
+  bool expeditionReady(uint32_t nowEpoch) const;
+  bool expeditionInventoryFull() const;
+  bool canStartExpedition(uint8_t minutes, uint32_t nowEpoch) const;
+  uint8_t expeditionTrainingChance(uint8_t minutes) const;
+  bool startExpedition(uint8_t minutes, uint32_t nowEpoch, uint8_t luckRoll, uint8_t itemRoll = 0);
+  ExpeditionItem claimExpedition(uint32_t nowEpoch);
+  bool useExpeditionItem(ExpeditionItem item, int8_t trainingStat = -1);
 
   // stats de combate: base real de gen 1 x genes + nivel + entrenamiento
   uint16_t atkStat() const;
@@ -262,6 +293,7 @@ private:
   void tick();
   void hatch();
   void registerSpecies(int16_t dex);
+  bool canReceiveExpeditionItem(ExpeditionItem item) const;
   void save();
   void load();
   static uint8_t clamp100(int v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }

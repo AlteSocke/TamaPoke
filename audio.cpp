@@ -124,6 +124,10 @@ static const Note N_WEAK_HIT[]     = {SOFT(420, 70, 58), SOFT(360, 90, 50)};
 static const Note N_MINIGAME_OK[]  = {SL(1047, 46, 1568, 88, W_TRI), TRI(1760, 42, 78)};
 static const Note N_MINIGAME_BAD[] = {NS(42, 52), SL(300, 95, 180, 70, W_SOFT)};
 static const Note N_LOW_HP[]       = {SQ(740, 70, 74), SIL(38), SQ(740, 70, 74)};
+static const Note N_EXPEDITION_START[] = {TRI(523, 52, 64), TRI(659, 62, 70), SL(784, 115, 1047, 72, W_TRI)};
+static const Note N_EXPEDITION_FOUND[] = {TRI(784, 55, 70), TRI(1047, 58, 76), TRI(1319, 65, 78), SOFT(1568, 130, 72)};
+static const Note N_EXPEDITION_CLAIM[] = {SOFT(988, 55, 66), TRI(1319, 70, 74), SL(1568, 115, 1976, 76, W_TRI)};
+static const Note N_ITEM_USE[] = {SOFT(659, 48, 62), SL(784, 95, 1175, 70, W_TRI)};
 
 struct SfxDef { const Note *n; uint8_t len; };
 static const SfxDef SFX[SFX_COUNT] = {
@@ -134,6 +138,7 @@ static const SfxDef SFX[SFX_COUNT] = {
   {N_MENU, 2}, {N_GAME_START, 3}, {N_BALL_BOUNCE, 1}, {N_BALL_MISS, 2}, {N_MEMO_STEP, 1},
   {N_ATTACK_QUICK, 2}, {N_ATTACK_HEAVY, 3}, {N_ENEMY_HIT, 2}, {N_EFFECTIVE, 3},
   {N_WEAK_HIT, 2}, {N_MINIGAME_OK, 2}, {N_MINIGAME_BAD, 2}, {N_LOW_HP, 3},
+  {N_EXPEDITION_START, 3}, {N_EXPEDITION_FOUND, 4}, {N_EXPEDITION_CLAIM, 3}, {N_ITEM_USE, 2},
 };
 
 static const uint8_t SFX_MIN_MODE[SFX_COUNT] = {
@@ -168,6 +173,10 @@ static const uint8_t SFX_MIN_MODE[SFX_COUNT] = {
   SOUND_MED,  // MINIGAME_OK
   SOUND_MED,  // MINIGAME_BAD
   SOUND_LOW,  // LOW_HP
+  SOUND_MED,  // EXPEDITION_START
+  SOUND_LOW,  // EXPEDITION_FOUND
+  SOUND_MED,  // EXPEDITION_CLAIM
+  SOUND_MED,  // ITEM_USE
 };
 
 static int16_t buf[256 * 2];  // estéreo intercalado (L=R)

@@ -480,6 +480,103 @@ static void testBattleRewardsAndProgression() {
   EXPECT_EQ(pet.fullness, 10);
 }
 
+static void testExpeditionStartAndClaim() {
+  Pet pet = hatchedPet(4);
+  pet.energy = 100;
+
+  EXPECT_TRUE(pet.canStartExpedition(15, 1000));
+  EXPECT_TRUE(pet.startExpedition(15, 1000, 99, 2));
+  EXPECT_EQ(pet.energy, 88);
+  EXPECT_EQ(pet.expeditionEndEpoch, 1900u);
+  EXPECT_EQ(pet.expeditionRewardItem, EXP_ITEM_CARE);
+  EXPECT_TRUE(pet.expeditionActive(1899));
+  EXPECT_TRUE(!pet.expeditionReady(1899));
+  EXPECT_TRUE(!pet.startExpedition(30, 1100, 0));
+  EXPECT_EQ(pet.claimExpedition(1899), EXP_ITEM_NONE);
+
+  EXPECT_EQ(pet.claimExpedition(1900), EXP_ITEM_CARE);
+  EXPECT_EQ(pet.itemCounts[EXP_ITEM_CARE], 1);
+  EXPECT_EQ(pet.expeditionEndEpoch, 0u);
+  EXPECT_EQ(pet.expeditionRewardItem, EXP_ITEM_NONE);
+}
+
+static void testExpeditionRequirementsAndTrainingChances() {
+  Pet egg;
+  EXPECT_TRUE(!egg.canStartExpedition(15, 1000));
+  EXPECT_EQ(egg.itemCounts[0], 0);
+
+  Pet pet = hatchedPet(1);
+  pet.energy = 100;
+  EXPECT_EQ(Pet::expeditionEnergyCost(15), 12);
+  EXPECT_EQ(Pet::expeditionEnergyCost(30), 20);
+  EXPECT_EQ(Pet::expeditionEnergyCost(60), 32);
+  EXPECT_EQ(Pet::expeditionEnergyCost(20), 255);
+  EXPECT_EQ(pet.expeditionTrainingChance(15), 8);
+  EXPECT_EQ(pet.expeditionTrainingChance(30), 15);
+  EXPECT_EQ(pet.expeditionTrainingChance(60), 25);
+
+  pet.fullness = pet.joy = pet.energy = pet.hygiene = 60;
+  pet.bond = 20;
+  EXPECT_EQ(pet.expeditionTrainingChance(15), 13);
+  EXPECT_EQ(pet.expeditionTrainingChance(30), 22);
+  EXPECT_EQ(pet.expeditionTrainingChance(60), 35);
+
+  pet.fullness = pet.joy = pet.energy = pet.hygiene = 80;
+  pet.bond = 50;
+  EXPECT_EQ(pet.expeditionTrainingChance(15), 18);
+  EXPECT_EQ(pet.expeditionTrainingChance(30), 30);
+  EXPECT_EQ(pet.expeditionTrainingChance(60), 45);
+
+  pet.sleeping = true;
+  EXPECT_TRUE(!pet.canStartExpedition(15, 1000));
+  pet.sleeping = false;
+  pet.energy = 11;
+  EXPECT_TRUE(!pet.canStartExpedition(15, 1000));
+  pet.energy = 100;
+  pet.ceremony = CER_FAREWELL;
+  EXPECT_TRUE(!pet.canStartExpedition(15, 1000));
+  pet.ceremony = CER_NONE;
+  for (uint8_t i = 0; i < EXP_ITEM_COUNT; i++) pet.itemCounts[i] = EXP_ITEM_MAX;
+  EXPECT_TRUE(pet.expeditionInventoryFull());
+  EXPECT_TRUE(!pet.canStartExpedition(15, 1000));
+}
+
+static void testExpeditionItemsCapAndConsumeSafely() {
+  Pet pet = hatchedPet(7);
+  pet.itemCounts[EXP_ITEM_SNACK] = 1;
+  pet.fullness = 90;
+  pet.joy = 98;
+  EXPECT_TRUE(pet.useExpeditionItem(EXP_ITEM_SNACK));
+  EXPECT_EQ(pet.fullness, 100);
+  EXPECT_EQ(pet.joy, 100);
+  EXPECT_EQ(pet.itemCounts[EXP_ITEM_SNACK], 0);
+
+  pet.itemCounts[EXP_ITEM_ENERGY] = 1;
+  pet.energy = 80;
+  EXPECT_TRUE(pet.useExpeditionItem(EXP_ITEM_ENERGY));
+  EXPECT_EQ(pet.energy, 100);
+
+  pet.itemCounts[EXP_ITEM_CARE] = 1;
+  pet.hygiene = 80;
+  pet.poops = 1;
+  EXPECT_TRUE(pet.useExpeditionItem(EXP_ITEM_CARE));
+  EXPECT_EQ(pet.hygiene, 100);
+  EXPECT_EQ(pet.poops, 0);
+
+  pet.itemCounts[EXP_ITEM_TRAIN] = 1;
+  pet.trAtk = 99;
+  EXPECT_TRUE(!pet.useExpeditionItem(EXP_ITEM_TRAIN));
+  EXPECT_EQ(pet.itemCounts[EXP_ITEM_TRAIN], 1);
+  EXPECT_TRUE(pet.useExpeditionItem(EXP_ITEM_TRAIN, TRAIN_STAT_ATK));
+  EXPECT_EQ(pet.trAtk, 100);
+  EXPECT_EQ(pet.itemCounts[EXP_ITEM_TRAIN], 0);
+
+  pet.itemCounts[EXP_ITEM_TRAIN] = 1;
+  pet.trAtk = pet.trDef = pet.trSpe = 100;
+  EXPECT_TRUE(!pet.useExpeditionItem(EXP_ITEM_TRAIN, TRAIN_STAT_DEF));
+  EXPECT_EQ(pet.itemCounts[EXP_ITEM_TRAIN], 1);
+}
+
 int main() {
   testEggHatchesChosenStarter();
   testBattleStatsUseBaseGenesLevelAndTraining();
@@ -504,6 +601,9 @@ int main() {
   testCareBonusCapsStreakContribution();
   testFarewellAndRunawayReadiness();
   testBattleRewardsAndProgression();
+  testExpeditionStartAndClaim();
+  testExpeditionRequirementsAndTrainingChances();
+  testExpeditionItemsCapAndConsumeSafely();
 
   if (failures) {
     std::cerr << failures << " Testfehler\n";

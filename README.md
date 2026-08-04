@@ -3,7 +3,7 @@
 [![Flash in browser](https://img.shields.io/badge/flash-in%20browser-FF6B00?logo=googlechrome&logoColor=white)](https://shadowenemyx.github.io/TamaPoke/web/)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-3D%20case-00AE42?logo=bambulab&logoColor=white)](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)
 ![Board](https://img.shields.io/badge/board-ESP32--S3%20round%20AMOLED-E7352C?logo=espressif&logoColor=white)
-![Firmware](https://img.shields.io/badge/firmware-v1.27.5--charge--config-8A2BE2)
+![Firmware](https://img.shields.io/badge/firmware-v1.28--expeditions--items-8A2BE2)
 ![Code](https://img.shields.io/badge/code-MIT-blue)
 ![Languages](https://img.shields.io/badge/languages-6-FFCB05)
 [![Stars](https://img.shields.io/github/stars/ShadowEnemyx/TamaPoke?style=flat&logo=github&color=yellow)](https://github.com/ShadowEnemyx/TamaPoke/stargazers)
@@ -55,6 +55,8 @@ progression, battery (AXP2101) and PWR button, anti-burn-in dimming,
 first run**, a one-click **web installer**, manual and rare optional wild
 battles, one-shot catch attempts after wins, extra minigames, pet events,
 personality/profile cards, daily goals and richer synthesized sound effects.
+The Expedition card adds timed background tours and a small persistent item
+inventory.
 
 Pending: longer hardware soak testing and polish. See **Roadmap**.
 
@@ -114,6 +116,22 @@ Tap **Play** to open a small menu:
 All minigame records are saved and shown on the Personality/Records area.
 The daily **CATCH 5** goal counts Catch-minigame targets and successful wild
 Pokémon catches.
+
+### Expeditions & inventory
+
+The **Expedition** card offers one background tour at a time. Your Pokémon stays
+on the normal screen and can still be fed, played with, put to sleep or used in
+battles while the timer runs.
+
+- Start a **15 / 30 / 60 minute** tour for **12 / 20 / 32 ENE**. An egg,
+  sleeping Pokémon, active/unfinished tour or full inventory blocks a new tour.
+- Every finished tour has one stored reward. Open the card and **Claim** it; a
+  reboot cannot reroll the reward.
+- Good departure care matters: average needs of at least 60 plus Bond 20, or
+  average 80 plus Bond 50, raises the Training Token chance. Tours never fail.
+- The inventory holds at most **3 of each**: Trail Snack (+25 FOOD, +5 JOY),
+  Energy Tonic (+30 ENE), Care Kit (+30 HYG and one poop), and Train Token
+  (+2 chosen ATK / DEF / SPD training, capped at 100).
 
 ### Eggs & who you get (spawn odds)
 - **First ever pet:** you pick a starter — **Bulbasaur / Charmander / Squirtle**.
@@ -317,6 +335,8 @@ Swipe up from the main screen, then swipe between cards:
   **Strength Training**.
 - **Medals**: individual medals and progress.
 - **Progress**: level, next level, evolution readiness and care slip-ups.
+- **Expedition**: launch 15/30/60-minute background tours, collect their reward
+  and use the four stored item types.
 
 ### Sound modes
 Swipe down to settings and tap the sound button:

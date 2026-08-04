@@ -27,8 +27,8 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.27.5-charge-config"
-#define HELP_PAGE_COUNT 7
+#define FW_VERSION "1.28-expeditions-items"
+#define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
@@ -72,10 +72,11 @@ bool cardOpen = false;        // ficha del bicho (deslizar vertical)
 bool kbOpen = false;          // teclado para renombrar al bicho
 char nameBuf[12] = "";
 uint8_t nameLen = 0;
-#define CARD_COUNT 7
-uint8_t cardPage = 0;         // 0 perfil, 1 personalidad, 2 diario, 3 caja, 4 combate, 5 medallas, 6 progreso
+#define CARD_COUNT 8
+uint8_t cardPage = 0;         // 0 perfil, 1 personalidad, 2 diario, 3 caja, 4 combate, 5 medallas, 6 progreso, 7 expedicion
 uint8_t boxPage = 0;
 uint8_t boxSort = 0;          // 0 dex, 1 tipo, 2 criados primero
+bool expeditionTrainChoiceOpen = false;
 bool clockOpen = false;       // pantalla de ajuste de hora (deslizar abajo)
 int clockH = 12, clockM = 0;  // hora en edicion
 bool powerSave = false;       // ahorro opcional: off por defecto
@@ -485,6 +486,14 @@ void loop() {
   maybeOfferPetEvent(now);
   maybePlayAmbientSound(now);
 
+  // Die Expeditionskarte bleibt sonst als statischer Screen stehen. Ein
+  // sekundenweises Dirty-Render ist nur aktiv, waehrend ihr Countdown sichtbar ist.
+  static uint32_t lastExpeditionCardTick = 0;
+  if (cardOpen && cardPage == 7 && now - lastExpeditionCardTick >= 1000UL) {
+    lastExpeditionCardTick = now;
+    cardDirty = true;
+  }
+
   // pulsacion corta del PWR: pantalla on/off
   static uint32_t lastPwr = 0;
   if (now - lastPwr > 250) {
@@ -522,6 +531,14 @@ void loop() {
     uint32_t e = rtcEpoch();
     if (e) pet.lastSeenEpoch = e;
   }
+
+  static bool expeditionWasActive = false;
+  bool expeditionActiveNow = pet.expeditionActive(pet.lastSeenEpoch);
+  if (expeditionWasActive && !expeditionActiveNow && pet.expeditionEndEpoch) {
+    sfxPlay(SFX_EXPEDITION_FOUND);
+    if (cardOpen && cardPage == 7) cardDirty = true;
+  }
+  expeditionWasActive = expeditionActiveNow;
 
   // latido de salud cada 5 min (para el soak test; se descarta si no hay monitor)
   static uint32_t lastHealth = 0;
@@ -815,6 +832,7 @@ void startCleanGame();
 void startTypeGame();
 void cleanTap(int16_t x, int16_t y);
 void typeTap(int16_t x, int16_t y);
+void expeditionCardTap(int16_t x, int16_t y);
 
 void onSwipeV(int dir) {
   if (helpOpen) { helpOpen = false; clockOpen = true; clockDirty = true; lockTouchBrief(); sfxPlay(SFX_TAP); return; }
@@ -825,7 +843,7 @@ void onSwipeV(int dir) {
   if (gameOpen || galleryOpen || kbOpen || sackOpen || battleOpen || pet.ceremony) return;
   if (clockOpen) { clockOpen = false; markUiDirty(); lockTouchBrief(); sfxPlay(SFX_TAP); return; }
   if (cardOpen) {
-    if (dir < 0) { cardOpen = false; markUiDirty(); lockTouchBrief(); sfxPlay(SFX_TAP); }  // arriba cierra la ficha
+    if (dir < 0) { cardOpen = false; expeditionTrainChoiceOpen = false; markUiDirty(); lockTouchBrief(); sfxPlay(SFX_TAP); }  // arriba cierra la ficha
     return;
   }
   if (dir > 0) {                    // deslizar abajo: ajustar hora
@@ -856,7 +874,7 @@ void onSwipe(int dir) {
     int p = (int)cardPage + (dir > 0 ? -1 : 1);  // izquierda avanza
     uint8_t old = cardPage;
     cardPage = p < 0 ? 0 : (p >= CARD_COUNT ? CARD_COUNT - 1 : p);
-    if (cardPage != old) { cardDirty = true; sfxPlay(SFX_MENU); }
+    if (cardPage != old) { expeditionTrainChoiceOpen = false; cardDirty = true; sfxPlay(SFX_MENU); }
     return;
   }
   if (!galleryOpen) {
@@ -1002,6 +1020,8 @@ void onTap(int16_t x, int16_t y) {
       markUiDirty();
       lockTouchBrief();
       startSack();
+    } else if (cardPage == 7) {
+      expeditionCardTap(x, y);
     } else if (y >= 400) {
       cardOpen = false;
       markUiDirty();
@@ -3015,12 +3035,12 @@ static const char *const HELP_WORD[LANG_COUNT] = { "AYUDA", "HELP", "AIDE", "HIL
 static const char *const HELP_OK[LANG_COUNT] = { "OK", "OK", "OK", "OK", "OK", "OK" };
 
 static const char *const HELP_TITLES[LANG_COUNT][HELP_PAGE_COUNT] = {
-  { "CUIDADO", "SUENO/ENERGIA", "MINIJUEGOS", "COMBATE 1", "COMBATE 2", "COLECCION", "EXTRAS" },
-  { "CARE", "SLEEP/ENERGY", "MINIGAMES", "BATTLE 1", "BATTLE 2", "COLLECTION", "EXTRAS" },
-  { "SOIN", "SOMMEIL/ENE", "MINI-JEUX", "COMBAT 1", "COMBAT 2", "COLLECTION", "EXTRAS" },
-  { "PFLEGE", "SCHLAF/ENERGIE", "MINISPIELE", "KAMPF 1", "KAMPF 2", "SAMMLUNG", "EXTRAS" },
-  { "CURA", "SONNO/ENERGIA", "MINIGIOCHI", "LOTTA 1", "LOTTA 2", "COLLEZIONE", "EXTRA" },
-  { "CUIDADO", "SONO/ENERGIA", "MINIJOGOS", "BATALHA 1", "BATALHA 2", "COLECAO", "EXTRAS" },
+  { "CUIDADO", "SUENO/ENERGIA", "MINIJUEGOS", "COMBATE 1", "COMBATE 2", "COLECCION", "EXTRAS", "EXPEDICION" },
+  { "CARE", "SLEEP/ENERGY", "MINIGAMES", "BATTLE 1", "BATTLE 2", "COLLECTION", "EXTRAS", "EXPEDITION" },
+  { "SOIN", "SOMMEIL/ENE", "MINI-JEUX", "COMBAT 1", "COMBAT 2", "COLLECTION", "EXTRAS", "EXPEDITION" },
+  { "PFLEGE", "SCHLAF/ENERGIE", "MINISPIELE", "KAMPF 1", "KAMPF 2", "SAMMLUNG", "EXTRAS", "EXPEDITION" },
+  { "CURA", "SONNO/ENERGIA", "MINIGIOCHI", "LOTTA 1", "LOTTA 2", "COLLEZIONE", "EXTRA", "SPEDIZIONE" },
+  { "CUIDADO", "SONO/ENERGIA", "MINIJOGOS", "BATALHA 1", "BATALHA 2", "COLECAO", "EXTRAS", "EXPEDICAO" },
 };
 
 static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT] = {
@@ -3032,6 +3052,7 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
     { "Esquivar evita dano.", "Si sale: Contra listo.", "Prox ataque pega mas.", "Ruhe/Descanso cura 2x.", "Tambien da Guardia.", "Tipos suben/bajan dano." },
     { "Pokedex: desliza lado.", "Criado y atrapado cuentan.", "Box muestra capturas.", "Cartas: desliza arriba.", "Perfil cambia nombre.", "Progreso muestra evo." },
     { "Diario da metas diarias.", "Eventos salen raros.", "Batallas salvajes opc.", "Captura tras ganar.", "Rachas y medallas quedan.", "Sonido se ajusta abajo." },
+    { "Expedicion: 15/30/60 min.", "Cuesta energia al salir.", "El bicho sigue disponible.", "Buen cuidado mejora premio.", "Recoge 1 objeto al volver.", "Objetos max. x3." },
   },
   {
     { "Low food = slip-up.", "Play raises joy.", "Bath cleans dirt.", "Petting gives joy/bond.", "High weight slows you.", "Candy cheers but fattens." },
@@ -3041,6 +3062,7 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
     { "Dodge avoids damage.", "Success: Counter ready.", "Next attack hits harder.", "Rest heals only 2x.", "Rest also gives Guard.", "Types change damage." },
     { "Pokedex: side swipe.", "Raised and caught differ.", "Box shows catches.", "Cards: swipe up.", "Profile renames pet.", "Progress shows evolution." },
     { "Daily gives small goals.", "Events appear rarely.", "Wild battles are optional.", "Catch after winning.", "Streaks/medals persist.", "Sound is in settings." },
+    { "Expedition: 15/30/60 min.", "Energy is spent at start.", "Pet stays available.", "Care and bond improve finds.", "Claim 1 item when back.", "Items hold max x3." },
   },
   {
     { "Faim basse = erreur.", "Jouer monte la joie.", "Bain nettoie.", "Caresse donne lien/joie.", "Poids haut ralentit.", "Bonbon rend gros." },
@@ -3050,6 +3072,7 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
     { "Esquive evite degats.", "Succes: Contre pret.", "Prochaine attaque plus.", "Repos soigne 2 fois.", "Repos donne Garde.", "Types changent degats." },
     { "Pokedex: glisse cote.", "Eleve et capture separent.", "Boite montre captures.", "Cartes: glisse haut.", "Profil renomme.", "Progres montre evo." },
     { "Quotidien donne buts.", "Events rares.", "Combats sauvages option.", "Capture apres victoire.", "Series/medailles restent.", "Son dans reglages." },
+    { "Expedition: 15/30/60 min.", "Energie payee au depart.", "Le pet reste disponible.", "Soin/lien aide le butin.", "Prends 1 objet au retour.", "Objets max x3." },
   },
   {
     { "Food 0 = Patzer.", "Spielen hebt Freude.", "Bad reinigt Hygiene.", "Streicheln gibt Bond.", "Hohes Gewicht bremst.", "Candy freut, macht dick." },
@@ -3059,6 +3082,7 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
     { "Ausweichen meidet Schaden.", "Klappt es: Konter bereit.", "Naechster Angriff staerker.", "Ruhen heilt nur 2x.", "Ruhen gibt auch Schutz.", "Typen aendern Schaden." },
     { "Pokedex: seitlich wischen.", "Aufgezogen != gefangen.", "Box zeigt Gefangene.", "Karten: hoch wischen.", "Profil benennt um.", "Fortschritt zeigt Evo." },
     { "Taeglich gibt Ziele.", "Events sind selten.", "Wildkampf ist optional.", "Fangen nach Sieg.", "Serien/Medaillen bleiben.", "Ton unten einstellen." },
+    { "Expedition: 15/30/60 Min.", "Kostet beim Start Energie.", "Pet bleibt verfuegbar.", "Pflege/Bond verbessert Fund.", "Fund danach einsammeln.", "Items maximal x3." },
   },
   {
     { "Cibo 0 = errore.", "Gioca aumenta gioia.", "Bagno pulisce.", "Carezza da legame.", "Peso alto rallenta.", "Dolce rallegra, ingrassa." },
@@ -3068,6 +3092,7 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
     { "Schiva evita danni.", "Successo: contro pronto.", "Prox attacco piu forte.", "Riposo cura solo 2x.", "Riposo da Guardia.", "Tipi cambiano danni." },
     { "Pokedex: scorri lato.", "Allevato != preso.", "Box mostra presi.", "Carte: scorri su.", "Profilo rinomina.", "Progresso mostra evo." },
     { "Quotidiano da obiettivi.", "Eventi rari.", "Lotte selvatiche opz.", "Cattura dopo vittoria.", "Serie/medaglie restano.", "Audio nei settaggi." },
+    { "Spedizione: 15/30/60 min.", "Energia spesa alla partenza.", "Il pet resta disponibile.", "Cura/legame migliora premio.", "Ritira 1 oggetto al ritorno.", "Oggetti max x3." },
   },
   {
     { "Comida 0 = falha.", "Jogar sobe alegria.", "Banho limpa.", "Carinho da vinculo.", "Peso alto atrasa.", "Doce alegra, engorda." },
@@ -3077,6 +3102,7 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
     { "Desviar evita dano.", "Sucesso: contra pronto.", "Prox ataque mais forte.", "Descanso cura so 2x.", "Descanso da Guarda.", "Tipos mudam dano." },
     { "Pokedex: deslize lado.", "Criado != capturado.", "Box mostra capturas.", "Cartas: deslize cima.", "Perfil renomeia.", "Progresso mostra evo." },
     { "Diario da metas.", "Eventos sao raros.", "Batalha selvagem opc.", "Captura apos vitoria.", "Series/medalhas ficam.", "Som nos ajustes." },
+    { "Expedicao: 15/30/60 min.", "Energia gasta ao sair.", "Pet fica disponivel.", "Cuidado/laco melhora premio.", "Recolhe 1 item ao voltar.", "Itens max x3." },
   },
 };
 
@@ -3821,6 +3847,244 @@ void renderCardProgress() {
   gfx->print(ms);
 }
 
+StrId expeditionItemText(ExpeditionItem item) {
+  switch (item) {
+    case EXP_ITEM_SNACK: return S_ITEM_SNACK;
+    case EXP_ITEM_ENERGY: return S_ITEM_ENERGY;
+    case EXP_ITEM_CARE: return S_ITEM_CARE;
+    case EXP_ITEM_TRAIN: return S_ITEM_TRAIN;
+    default: return S_WAIT;
+  }
+}
+
+uint16_t expeditionItemColor(ExpeditionItem item) {
+  switch (item) {
+    case EXP_ITEM_SNACK: return UI_BAR_WARN;
+    case EXP_ITEM_ENERGY: return 0x4C98;
+    case EXP_ITEM_CARE: return UI_BAR_OK;
+    case EXP_ITEM_TRAIN: return UI_BAR_BAD;
+    default: return UI_TRACK;
+  }
+}
+
+uint32_t expeditionNowEpoch() {
+  uint32_t nowEpoch = rtcEpoch();
+  return nowEpoch ? nowEpoch : pet.lastSeenEpoch;
+}
+
+void drawExpeditionItem(int x, int y, ExpeditionItem item) {
+  const int w = 172, h = 54;
+  uint8_t count = pet.itemCounts[item];
+  uint16_t col = expeditionItemColor(item);
+  gfx->fillRoundRect(x, y, w, h, 9, count ? UI_WHITE : C565(0xe4, 0xe8, 0xee));
+  gfx->drawRoundRect(x, y, w, h, 9, count ? col : UI_TRACK);
+  gfx->fillCircle(x + 22, y + 27, 12, count ? col : UI_TRACK);
+  if (item == EXP_ITEM_ENERGY) gfx->fillRect(x + 20, y + 17, 5, 20, UI_WHITE);
+  else if (item == EXP_ITEM_CARE) gfx->fillCircle(x + 22, y + 22, 4, UI_WHITE);
+  else if (item == EXP_ITEM_TRAIN) gfx->fillRect(x + 16, y + 25, 12, 4, UI_WHITE);
+
+  const char *label = T(expeditionItemText(item));
+  gfx->setTextSize(1);
+  gfx->setTextColor(count ? UI_INK : UI_TRACK);
+  gfx->setCursor(x + 42, y + 16);
+  gfx->print(label);
+  char amount[6];
+  snprintf(amount, sizeof(amount), "x%u", count);
+  gfx->setTextSize(2);
+  gfx->setCursor(x + 136, y + 29);
+  gfx->print(amount);
+}
+
+void renderExpeditionTrainChoice() {
+  gfx->fillRoundRect(58, 118, 350, 190, 14, UI_WHITE);
+  gfx->drawRoundRect(58, 118, 350, 190, 14, UI_INK);
+  const char *title = T(S_ITEM_TRAIN);
+  gfx->setTextColor(UI_INK);
+  gfx->setTextSize(2);
+  gfx->setCursor(CX - strlen(title) * 6, 136);
+  gfx->print(title);
+
+  const StrId labels[3] = { S_TRAIN_ATK, S_TRAIN_DEF, S_TRAIN_SPE };
+  const uint8_t values[3] = { pet.trAtk, pet.trDef, pet.trSpe };
+  const uint16_t cols[3] = { UI_BAR_BAD, 0x4C98, UI_BAR_WARN };
+  for (uint8_t i = 0; i < 3; i++) {
+    int x = 74 + i * 108;
+    bool usable = values[i] < 100;
+    gfx->fillRoundRect(x, 172, 102, 66, 9, usable ? cols[i] : UI_TRACK);
+    gfx->setTextColor(UI_BG_DAY);
+    gfx->setTextSize(2);
+    const char *label = T(labels[i]);
+    gfx->setCursor(x + (102 - (int)strlen(label) * 12) / 2, 184);
+    gfx->print(label);
+    if (usable) {
+      gfx->setTextSize(1);
+      gfx->setCursor(x + 37, 210);
+      gfx->print("+2");
+    } else {
+      const char *maxed = T(S_ITEM_MAXED);
+      gfx->setTextSize(1);
+      gfx->setCursor(x + (102 - (int)strlen(maxed) * 6) / 2, 210);
+      gfx->print(maxed);
+    }
+  }
+  gfx->setTextColor(UI_TRACK);
+  gfx->setTextSize(2);
+  gfx->setCursor(CX - strlen(T(S_BACK)) * 6, 268);
+  gfx->print(T(S_BACK));
+}
+
+void renderCardExpedition() {
+  uint32_t nowEpoch = expeditionNowEpoch();
+  gfx->setTextColor(UI_INK);
+  gfx->setTextSize(3);
+  gfx->setCursor(CX - strlen(T(S_EXPEDITION)) * 9, 42);
+  gfx->print(T(S_EXPEDITION));
+
+  if (pet.expeditionReady(nowEpoch)) {
+    char found[34];
+    snprintf(found, sizeof(found), T(S_FOUND_ITEM_FMT), T(expeditionItemText((ExpeditionItem)pet.expeditionRewardItem)));
+    gfx->setTextColor(UI_BAR_OK);
+    gfx->setTextSize(2);
+    gfx->setCursor(CX - strlen(found) * 6, 78);
+    gfx->print(found);
+    gfx->fillRoundRect(98, 98, 270, 48, 11, UI_BAR_OK);
+    gfx->setTextColor(UI_BG_DAY);
+    gfx->setTextSize(2);
+    gfx->setCursor(CX - strlen(T(S_EXP_CLAIM)) * 6, 111);
+    gfx->print(T(S_EXP_CLAIM));
+  } else if (pet.expeditionActive(nowEpoch)) {
+    uint32_t left = (pet.expeditionEndEpoch - nowEpoch + 59UL) / 60UL;
+    char back[28];
+    snprintf(back, sizeof(back), T(S_EXP_IN_FMT), (unsigned)left);
+    gfx->setTextColor(0x4C98);
+    gfx->setTextSize(3);
+    gfx->setCursor(CX - strlen(back) * 9, 86);
+    gfx->print(back);
+    gfx->setTextColor(UI_TRACK);
+    gfx->setTextSize(1);
+    gfx->setCursor(CX - 90, 116);
+    gfx->print(T(S_WAIT));
+  } else {
+    const uint8_t minutes[3] = { 15, 30, 60 };
+    const StrId labels[3] = { S_EXP_15, S_EXP_30, S_EXP_60 };
+    const int xs[3] = { 50, 180, 310 };
+    for (uint8_t i = 0; i < 3; i++) {
+      uint8_t cost = Pet::expeditionEnergyCost(minutes[i]);
+      bool available = pet.canStartExpedition(minutes[i], nowEpoch);
+      uint16_t col = i == 0 ? UI_BAR_OK : i == 1 ? 0x4C98 : UI_BAR_BAD;
+      gfx->fillRoundRect(xs[i], 94, 106, 54, 9, available ? col : UI_TRACK);
+      gfx->setTextColor(UI_BG_DAY);
+      gfx->setTextSize(2);
+      const char *label = T(labels[i]);
+      gfx->setCursor(xs[i] + (106 - (int)strlen(label) * 12) / 2, 104);
+      gfx->print(label);
+      char costText[12];
+      snprintf(costText, sizeof(costText), "-%u ENE", cost);
+      gfx->setTextSize(1);
+      gfx->setCursor(xs[i] + (106 - (int)strlen(costText) * 6) / 2, 130);
+      gfx->print(costText);
+    }
+    if (pet.expeditionInventoryFull()) {
+      gfx->setTextColor(UI_BAR_BAD);
+      gfx->setTextSize(1);
+      gfx->setCursor(CX - strlen(T(S_INV_FULL)) * 3, 76);
+      gfx->print(T(S_INV_FULL));
+    } else if (pet.energy < 12) {
+      char need[24];
+      snprintf(need, sizeof(need), T(S_NEED_ENE_FMT), 12);
+      gfx->setTextColor(UI_BAR_BAD);
+      gfx->setTextSize(1);
+      gfx->setCursor(CX - strlen(need) * 3, 76);
+      gfx->print(need);
+    }
+  }
+
+  gfx->setTextColor(UI_INK);
+  gfx->setTextSize(2);
+  gfx->setCursor(CX - strlen(T(S_INVENTORY)) * 6, 174);
+  gfx->print(T(S_INVENTORY));
+  drawExpeditionItem(50, 190, EXP_ITEM_SNACK);
+  drawExpeditionItem(244, 190, EXP_ITEM_ENERGY);
+  drawExpeditionItem(50, 254, EXP_ITEM_CARE);
+  drawExpeditionItem(244, 254, EXP_ITEM_TRAIN);
+  if (expeditionTrainChoiceOpen) renderExpeditionTrainChoice();
+}
+
+int8_t expeditionItemAt(int16_t x, int16_t y) {
+  if ((y < 190 || y > 244) && (y < 254 || y > 308)) return -1;
+  bool left = x >= 50 && x <= 222;
+  bool right = x >= 244 && x <= 416;
+  if (!left && !right) return -1;
+  uint8_t row = y >= 254 ? 1 : 0;
+  return row * 2 + (right ? 1 : 0);
+}
+
+void expeditionCardTap(int16_t x, int16_t y) {
+  if (expeditionTrainChoiceOpen) {
+    if (y >= 172 && y <= 238 && x >= 74 && x <= 398) {
+      int8_t stat = (x - 74) / 108;
+      if (stat > TRAIN_STAT_SPE || !pet.useExpeditionItem(EXP_ITEM_TRAIN, stat)) sfxPlay(SFX_DENY);
+      else sfxPlay(SFX_ITEM_USE);
+      expeditionTrainChoiceOpen = false;
+      cardDirty = true;
+      lockTouchBrief();
+      return;
+    }
+    expeditionTrainChoiceOpen = false;
+    cardDirty = true;
+    sfxPlay(SFX_TAP);
+    return;
+  }
+  if (y >= 396) {
+    cardOpen = false;
+    markUiDirty();
+    lockTouchBrief();
+    sfxPlay(SFX_TAP);
+    return;
+  }
+
+  uint32_t nowEpoch = expeditionNowEpoch();
+  if (pet.expeditionReady(nowEpoch)) {
+    if (x >= 98 && x <= 368 && y >= 98 && y <= 146) {
+      ExpeditionItem item = pet.claimExpedition(nowEpoch);
+      if (item != EXP_ITEM_NONE) sfxPlay(SFX_EXPEDITION_CLAIM);
+      else sfxPlay(SFX_DENY);
+      cardDirty = true;
+      lockTouchBrief();
+    }
+    return;
+  }
+  if (!pet.expeditionActive(nowEpoch) && y >= 94 && y <= 148) {
+    const uint8_t minutes[3] = { 15, 30, 60 };
+    int idx = x >= 50 && x <= 156 ? 0 : x >= 180 && x <= 286 ? 1 : x >= 310 && x <= 416 ? 2 : -1;
+    if (idx >= 0 && pet.startExpedition(minutes[idx], nowEpoch, (uint8_t)random(100), (uint8_t)random(3))) {
+      sfxPlay(SFX_EXPEDITION_START);
+      cardDirty = true;
+      lockTouchBrief();
+    } else {
+      sfxPlay(SFX_DENY);
+    }
+    return;
+  }
+
+  int8_t item = expeditionItemAt(x, y);
+  if (item < 0) return;
+  ExpeditionItem selected = (ExpeditionItem)item;
+  if (pet.itemCounts[selected] == 0) {
+    sfxPlay(SFX_DENY);
+    return;
+  }
+  if (selected == EXP_ITEM_TRAIN) {
+    expeditionTrainChoiceOpen = true;
+    cardDirty = true;
+    sfxPlay(SFX_MENU);
+  } else if (pet.useExpeditionItem(selected)) {
+    cardDirty = true;
+    sfxPlay(SFX_ITEM_USE);
+    lockTouchBrief();
+  }
+}
+
 void renderCard() {
   cardDirty = false;
   gfx->fillScreen(UI_BG_DAY);
@@ -3830,7 +4094,8 @@ void renderCard() {
   else if (cardPage == 3) renderCardBox();
   else if (cardPage == 4) renderCardStats();
   else if (cardPage == 5) renderCardMedals();
-  else renderCardProgress();
+  else if (cardPage == 6) renderCardProgress();
+  else renderCardExpedition();
 
   // indicador de paginas + ayuda
   int dotsX = CX - ((CARD_COUNT - 1) * 24) / 2;
