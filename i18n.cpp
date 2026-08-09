@@ -61,6 +61,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "RECOGER", "MOCHILA", "MOCHILA LLENA", "FALTA ENE %u",
     "SNACK RUTA", "TONICO ENERGIA", "KIT CUIDADO", "FICHA ENTRENO", "HALLADO: %s",
     "ATQ", "DEF", "VEL", "AL MAX",
+    "COLECCION", "MARCO %u/%u", "MARCO NUEVO!",
+    "ENTRENADOR", "EXPLORADOR", "COLECCIONISTA", "INVESTIGADOR", "MAESTRO", "COMPLETO",
   },
   // ---------------- EN ----------------
   {
@@ -115,6 +117,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "CLAIM", "INVENTORY", "INVENTORY FULL", "NEED ENE %u",
     "TRAIL SNACK", "ENERGY TONIC", "CARE KIT", "TRAIN TOKEN", "FOUND: %s",
     "ATK", "DEF", "SPD", "MAXED",
+    "COLLECTION", "FRAME %u/%u", "NEW FRAME!",
+    "TRAINER", "SCOUT", "COLLECTOR", "RESEARCHER", "MASTER", "COMPLETE",
   },
   // ---------------- FR ----------------
   {
@@ -169,6 +173,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "PRENDRE", "SAC", "SAC PLEIN", "ENE %u REQUIS",
     "SNACK RANDO", "TONIC ENERGIE", "KIT SOIN", "JETON TRAIN", "TROUVE: %s",
     "ATQ", "DEF", "VIT", "MAX",
+    "COLLECTION", "CADRE %u/%u", "NOUVEAU CADRE!",
+    "DRESSEUR", "ECLAIREUR", "COLLECTIONNEUR", "CHERCHEUR", "MAITRE", "COMPLET",
   },
   // ---------------- DE ----------------
   {
@@ -223,6 +229,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "EINSAMMELN", "INVENTAR", "INVENTAR VOLL", "ENE %u NOETIG",
     "WEGE-SNACK", "ENERGIE-TONIC", "PFLEGE-SET", "TRAINING-JETON", "FUND: %s",
     "ANG", "VER", "INI", "MAX",
+    "SAMMLUNG", "RAHMEN %u/%u", "NEUER RAHMEN!",
+    "TRAINER", "SCOUT", "SAMMLER", "FORSCHER", "MEISTER", "KOMPLETT",
   },
   // ---------------- IT ----------------
   {
@@ -277,6 +285,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "RITIRA", "ZAINO", "ZAINO PIENO", "SERVE ENE %u",
     "SNACK VIAGGIO", "TONICO ENERGIA", "KIT CURA", "GETTONE ALLEN.", "TROVATO: %s",
     "ATT", "DIF", "VEL", "MAX",
+    "COLLEZIONE", "CORNICE %u/%u", "NUOVA CORNICE!",
+    "ALLENATORE", "ESPLORATORE", "COLLEZIONISTA", "RICERCATORE", "MAESTRO", "COMPLETA",
   },
   // ---------------- PT ----------------
   {
@@ -331,6 +341,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "RECOLHER", "MOCHILA", "MOCHILA CHEIA", "FALTA ENE %u",
     "SNACK TRILHA", "TONICO ENERGIA", "KIT CUIDADO", "FICHA TREINO", "ACHADO: %s",
     "ATQ", "DEF", "VEL", "MAX",
+    "COLECAO", "MOLDURA %u/%u", "NOVA MOLDURA!",
+    "TREINADOR", "EXPLORADOR", "COLECIONADOR", "PESQUISADOR", "MESTRE", "COMPLETO",
   },
 };
 

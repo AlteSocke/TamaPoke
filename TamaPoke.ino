@@ -27,7 +27,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.28-expeditions-items"
+#define FW_VERSION "1.29-collection-chirps"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -978,6 +978,18 @@ void onTap(int16_t x, int16_t y) {
   if (pet.ceremony) return;  // durante la despedida no hay botones
   if (cardOpen) {
     if (cardPage == 0 && y < 84) openKeyboard();  // tocar el nombre = renombrar
+    else if (cardPage == 0 && y >= 366 && y <= 398) {
+      uint8_t count = pet.unlockedCollectionFrameCount();
+      uint8_t next = pet.collectionFrame;
+      if (x >= 62 && x <= 146) next = pet.collectionFrame == 0 ? count - 1 : pet.collectionFrame - 1;
+      else if (x >= 320 && x <= 404) next = (uint8_t)((pet.collectionFrame + 1) % count);
+      else return;
+      if (pet.setCollectionFrame(next)) {
+        cardDirty = true;
+        sfxPlay(SFX_MENU);
+        lockTouchBrief();
+      }
+    }
     else if (cardPage == 3) {
       if (x >= 302 && x <= 408 && y >= 62 && y <= 92) {
         boxSort = (boxSort + 1) % 3;
@@ -1003,6 +1015,7 @@ void onTap(int16_t x, int16_t y) {
             lockTouchBrief();
             galleryPmd.load(dex, pet.isShinyRegistered(dex));
             sfxPlay(SFX_TAP);
+            speciesChirpPlay(dex);
           }
         } else if (y >= 400) {
           cardOpen = false;
@@ -1146,6 +1159,7 @@ void onTap(int16_t x, int16_t y) {
     snprintf(petEventMsg, sizeof(petEventMsg), "%s", T(msg));
     petEventFeedbackUntil = millis() + 1600;
     if (!pet.sleeping) sfxPlay((r & PET_INTERACT_BOND) ? SFX_HEART : SFX_TAP);
+    if (r != PET_INTERACT_NONE && audioMode() == SOUND_FULL) speciesChirpPlay(pet.speciesId);
   }
 }
 
@@ -1392,6 +1406,7 @@ void render() {
     snprintf(name, sizeof(name), T(S_NAME_FMT), pet.shiny ? "*" : "", base, pet.level());
     drawHeader(name, gNight ? UI_INK_NIGHT : d.accent, statusMsg());
     drawStreakBadge();
+    drawCollectionFrame(CX, PET_GROUND - 96, 106, pet.collectionFrame);
     drawPet();
     drawBath();
     drawPoops();
@@ -2488,6 +2503,7 @@ void startBattleWith(int16_t forcedDex, uint8_t forcedLevel) {
   wildPmd.unload();
   wildPmd.load(battleDex, false);
   sfxPlay(SFX_TAP);
+  speciesChirpPlay(battleDex);
 }
 
 void startBattle() {
@@ -3050,7 +3066,7 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
     { "Bola: toca la bola.", "Atrapa: toca iconos.", "Memo: repite secuencia.", "Limpia: toca manchas.", "Tipo: elige ventaja.", "Dan records y entreno." },
     { "Rapido: menos dano.", "Rival esquiva poco.", "Recibes algo menos dano.", "Fuerte: mas dano.", "Riesgo y contra mayor.", "No siempre conviene." },
     { "Esquivar evita dano.", "Si sale: Contra listo.", "Prox ataque pega mas.", "Ruhe/Descanso cura 2x.", "Tambien da Guardia.", "Tipos suben/bajan dano." },
-    { "Pokedex: desliza lado.", "Criado y atrapado cuentan.", "Box muestra capturas.", "Cartas: desliza arriba.", "Perfil cambia nombre.", "Progreso muestra evo." },
+    { "Pokedex: desliza lado.", "Criado y atrapado cuentan.", "10/25/50/100/151: marcos.", "Perfil: elige marco.", "Detalle conocido: chirp.", "SON TODO: toca pet." },
     { "Diario da metas diarias.", "Eventos salen raros.", "Batallas salvajes opc.", "Captura tras ganar.", "Rachas y medallas quedan.", "Sonido se ajusta abajo." },
     { "Expedicion: 15/30/60 min.", "Cuesta energia al salir.", "El bicho sigue disponible.", "Buen cuidado mejora premio.", "Recoge 1 objeto al volver.", "Objetos max. x3." },
   },
@@ -3060,7 +3076,7 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
     { "Ball: tap the ball.", "Catch: tap icons.", "Memo: repeat sequence.", "Clean: tap stains.", "Type: pick advantage.", "Records and training." },
     { "Quick: lower damage.", "Enemy dodges less.", "You take less damage.", "Heavy: more damage.", "More risk/counterplay.", "Not always best." },
     { "Dodge avoids damage.", "Success: Counter ready.", "Next attack hits harder.", "Rest heals only 2x.", "Rest also gives Guard.", "Types change damage." },
-    { "Pokedex: side swipe.", "Raised and caught differ.", "Box shows catches.", "Cards: swipe up.", "Profile renames pet.", "Progress shows evolution." },
+    { "Pokedex: side swipe.", "Raised and caught count.", "10/25/50/100/151: frames.", "Profile: choose frame.", "Known detail: species chirp.", "SND ALL: tap pet." },
     { "Daily gives small goals.", "Events appear rarely.", "Wild battles are optional.", "Catch after winning.", "Streaks/medals persist.", "Sound is in settings." },
     { "Expedition: 15/30/60 min.", "Energy is spent at start.", "Pet stays available.", "Care and bond improve finds.", "Claim 1 item when back.", "Items hold max x3." },
   },
@@ -3070,7 +3086,7 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
     { "Balle: touche la balle.", "Attrape: touche icones.", "Memo: repete sequence.", "Nettoie: touche taches.", "Type: choisis avantage.", "Records et entrainement." },
     { "Rapide: degats bas.", "Ennemi esquive moins.", "Tu subis moins.", "Fort: degats hauts.", "Risque plus grand.", "Pas toujours meilleur." },
     { "Esquive evite degats.", "Succes: Contre pret.", "Prochaine attaque plus.", "Repos soigne 2 fois.", "Repos donne Garde.", "Types changent degats." },
-    { "Pokedex: glisse cote.", "Eleve et capture separent.", "Boite montre captures.", "Cartes: glisse haut.", "Profil renomme.", "Progres montre evo." },
+    { "Pokedex: glisse cote.", "Eleve et capture comptent.", "10/25/50/100/151: cadres.", "Profil: choisis cadre.", "Detail connu: chirp.", "SON TOUT: touche pet." },
     { "Quotidien donne buts.", "Events rares.", "Combats sauvages option.", "Capture apres victoire.", "Series/medailles restent.", "Son dans reglages." },
     { "Expedition: 15/30/60 min.", "Energie payee au depart.", "Le pet reste disponible.", "Soin/lien aide le butin.", "Prends 1 objet au retour.", "Objets max x3." },
   },
@@ -3080,7 +3096,7 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
     { "Ball: Ball antippen.", "Fangen: Icons treffen.", "Memo: Folge merken.", "Putzen: Flecken tippen.", "Typ: Vorteil waehlen.", "Gibt Rekorde/Training." },
     { "Schnell: weniger Schaden.", "Gegner weicht selten aus.", "Du kassierst weniger.", "Stark: mehr Schaden.", "Mehr Risiko/Gegendruck.", "Nicht immer beste Wahl." },
     { "Ausweichen meidet Schaden.", "Klappt es: Konter bereit.", "Naechster Angriff staerker.", "Ruhen heilt nur 2x.", "Ruhen gibt auch Schutz.", "Typen aendern Schaden." },
-    { "Pokedex: seitlich wischen.", "Aufgezogen != gefangen.", "Box zeigt Gefangene.", "Karten: hoch wischen.", "Profil benennt um.", "Fortschritt zeigt Evo." },
+    { "Pokedex: seitlich wischen.", "Aufz./gefangen zaehlen.", "10/25/50/100/151: Rahmen.", "Profil: Rahmen waehlen.", "Bekanntes Detail: Chirp.", "TON VIEL: Pet tippen." },
     { "Taeglich gibt Ziele.", "Events sind selten.", "Wildkampf ist optional.", "Fangen nach Sieg.", "Serien/Medaillen bleiben.", "Ton unten einstellen." },
     { "Expedition: 15/30/60 Min.", "Kostet beim Start Energie.", "Pet bleibt verfuegbar.", "Pflege/Bond verbessert Fund.", "Fund danach einsammeln.", "Items maximal x3." },
   },
@@ -3090,7 +3106,7 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
     { "Palla: tocca palla.", "Prendi: tocca icone.", "Memo: ripeti sequenza.", "Pulisci: tocca macchie.", "Tipo: scegli vantaggio.", "Record e allenamento." },
     { "Rapido: meno danni.", "Nemico schiva meno.", "Subisci meno danni.", "Forte: piu danni.", "Piu rischio.", "Non sempre migliore." },
     { "Schiva evita danni.", "Successo: contro pronto.", "Prox attacco piu forte.", "Riposo cura solo 2x.", "Riposo da Guardia.", "Tipi cambiano danni." },
-    { "Pokedex: scorri lato.", "Allevato != preso.", "Box mostra presi.", "Carte: scorri su.", "Profilo rinomina.", "Progresso mostra evo." },
+    { "Pokedex: scorri lato.", "Allevato e preso contano.", "10/25/50/100/151: cornici.", "Profilo: scegli cornice.", "Dettaglio noto: chirp.", "SON TUTTO: tocca pet." },
     { "Quotidiano da obiettivi.", "Eventi rari.", "Lotte selvatiche opz.", "Cattura dopo vittoria.", "Serie/medaglie restano.", "Audio nei settaggi." },
     { "Spedizione: 15/30/60 min.", "Energia spesa alla partenza.", "Il pet resta disponibile.", "Cura/legame migliora premio.", "Ritira 1 oggetto al ritorno.", "Oggetti max x3." },
   },
@@ -3100,7 +3116,7 @@ static const char *const HELP_LINES[LANG_COUNT][HELP_PAGE_COUNT][HELP_LINE_COUNT
     { "Bola: toque na bola.", "Pegar: toque icones.", "Memo: repita sequencia.", "Limpa: toque manchas.", "Tipo: escolha vantagem.", "Recordes e treino." },
     { "Rapido: dano menor.", "Rival desvia menos.", "Voce recebe menos.", "Forte: dano maior.", "Mais risco.", "Nem sempre melhor." },
     { "Desviar evita dano.", "Sucesso: contra pronto.", "Prox ataque mais forte.", "Descanso cura so 2x.", "Descanso da Guarda.", "Tipos mudam dano." },
-    { "Pokedex: deslize lado.", "Criado != capturado.", "Box mostra capturas.", "Cartas: deslize cima.", "Perfil renomeia.", "Progresso mostra evo." },
+    { "Pokedex: deslize lado.", "Criado e apanhado contam.", "10/25/50/100/151: molduras.", "Perfil: escolha moldura.", "Detalhe conhecido: chirp.", "SOM TODO: toque pet." },
     { "Diario da metas.", "Eventos sao raros.", "Batalha selvagem opc.", "Captura apos vitoria.", "Series/medalhas ficam.", "Som nos ajustes." },
     { "Expedicao: 15/30/60 min.", "Energia gasta ao sair.", "Pet fica disponivel.", "Cuidado/laco melhora premio.", "Recolhe 1 item ao voltar.", "Itens max x3." },
   },
@@ -3334,9 +3350,8 @@ void drawCelebration() {
       if (pet.newMedal & (1 << i)) { l2 = medalName(i); break; }
     l1 = T(S_MEDAL_BANNER);
   } else if (pet.showDexReward()) {
-    snprintf(buf, sizeof(buf), T(S_DEX_GOAL_FMT), pet.lastDexRewardGoal());
-    l1 = T(S_DEX_REWARD);
-    l2 = buf;
+    l1 = T(S_NEW_FRAME);
+    l2 = T((StrId)(S_RANK_TRAINER + pet.collectionRank()));
   } else if (pet.showMilestone()) {
     snprintf(buf, sizeof(buf), T(S_STREAK_DAYS_FMT), pet.streak);
     l1 = T(S_GREAT);
@@ -3352,6 +3367,37 @@ void drawCelebration() {
   gfx->setTextSize(2);
   gfx->setCursor(CX - strlen(l2) * 6, 212);
   gfx->print(l2);
+}
+
+uint16_t collectionFrameColor(uint8_t frame) {
+  static const uint16_t COLORS[] = {
+    UI_TRACK, UI_BAR_WARN, UI_BAR_OK, 0x4C98, UI_BAR_BAD, 0xF3B7,
+  };
+  return COLORS[frame < sizeof(COLORS) / sizeof(COLORS[0]) ? frame : 0];
+}
+
+void drawCollectionFrame(int cx, int cy, int radius, uint8_t frame) {
+  if (frame == 0) return;
+  uint16_t color = collectionFrameColor(frame);
+  gfx->drawCircle(cx, cy, radius, color);
+  if (frame >= 2) gfx->drawCircle(cx, cy, radius - 8, color);
+  if (frame >= 3) {
+    gfx->fillCircle(cx, cy - radius, 4, color);
+    gfx->fillCircle(cx + radius, cy, 4, color);
+    gfx->fillCircle(cx, cy + radius, 4, color);
+    gfx->fillCircle(cx - radius, cy, 4, color);
+  }
+  if (frame >= 4) {
+    gfx->drawLine(cx - radius + 12, cy - radius + 12, cx + radius - 12, cy + radius - 12, color);
+    gfx->drawLine(cx + radius - 12, cy - radius + 12, cx - radius + 12, cy + radius - 12, color);
+  }
+  if (frame >= 5) {
+    gfx->drawCircle(cx, cy, radius + 8, color);
+    gfx->fillCircle(cx, cy - radius - 8, 3, UI_BAR_WARN);
+    gfx->fillCircle(cx + radius + 8, cy, 3, UI_BAR_WARN);
+    gfx->fillCircle(cx, cy + radius + 8, 3, UI_BAR_WARN);
+    gfx->fillCircle(cx - radius - 8, cy, 3, UI_BAR_WARN);
+  }
 }
 
 // medallas en la ficha: badge con etiqueta, color si conseguida
@@ -3387,7 +3433,8 @@ void renderCardProfile() {
     gfx->printf("(%s)", speciesName);
   }
 
-  // retrato grande animado
+  // retrato grande animado mit dem aktuell ausgewaehlten Sammlerrahmen
+  drawCollectionFrame(CX, 206, 98, pet.collectionFrame);
   if (pmd.loaded) drawPmdAct(PMD_IDLE, CX, 206, millis(), true, false, 4);
 
   // racha con llama
@@ -3416,8 +3463,38 @@ void renderCardProfile() {
   gfx->print(info);
 
   gfx->setTextColor(UI_TRACK);
-  gfx->setCursor(CX - strlen(T(S_RENAME_HINT)) * 6, 332);
+  gfx->setCursor(CX - strlen(T(S_RENAME_HINT)) * 6, 326);
   gfx->print(T(S_RENAME_HINT));
+
+  const char *rank = T((StrId)(S_RANK_TRAINER + pet.collectionRank()));
+  char known[22], frame[22];
+  snprintf(known, sizeof(known), T(S_KNOWN_FMT), pet.knownDexCount());
+  snprintf(frame, sizeof(frame), T(S_FRAME_FMT), pet.collectionFrame + 1, pet.unlockedCollectionFrameCount());
+  gfx->setTextColor(UI_INK);
+  gfx->setTextSize(1);
+  gfx->setCursor(CX - (int)strlen(T(S_COLLECTION)) * 3, 344);
+  gfx->print(T(S_COLLECTION));
+  gfx->setTextColor(collectionFrameColor(pet.collectionFrame));
+  gfx->setCursor(CX - (int)strlen(rank) * 3, 356);
+  gfx->print(rank);
+  gfx->setTextColor(UI_TRACK);
+  gfx->setCursor(CX - (int)strlen(known) * 3, 368);
+  gfx->print(known);
+
+  gfx->fillRoundRect(74, 374, 52, 18, 6, UI_WHITE);
+  gfx->drawRoundRect(74, 374, 52, 18, 6, UI_INK);
+  gfx->fillRoundRect(340, 374, 52, 18, 6, UI_WHITE);
+  gfx->drawRoundRect(340, 374, 52, 18, 6, UI_INK);
+  gfx->setTextColor(UI_INK);
+  gfx->setTextSize(2);
+  gfx->setCursor(94, 376);
+  gfx->print("<");
+  gfx->setCursor(360, 376);
+  gfx->print(">");
+  gfx->setTextSize(1);
+  gfx->setCursor(CX - (int)strlen(frame) * 3, 380);
+  gfx->print(frame);
+  gfx->setTextSize(2);
 }
 
 StrId personalityNameId(PetPersonality p) {
@@ -4391,6 +4468,7 @@ void galleryTap(int16_t x, int16_t y) {
   galleryDetail = dex;
   galleryPmd.load(dex, pet.isShinyRegistered(dex));
   sfxPlay(SFX_MENU);
+  if (pet.isRegistered(dex) || pet.isCaught(dex)) speciesChirpPlay(dex);
 }
 
 void drawBattery() {

@@ -3,6 +3,7 @@
 #include <string>
 
 #include "pet.h"
+#include "species_chirp.h"
 
 uint32_t gMockMillis = 0;
 SerialMock Serial;
@@ -343,6 +344,53 @@ static void testDexRewardsApplyOnceAndCap() {
   EXPECT_TRUE(pet.bond > 0);
 }
 
+static void testCollectionRanksAndFrameSelection() {
+  Pet pet = hatchedPet(4);
+  EXPECT_EQ(pet.collectionRank(), 0);
+  EXPECT_EQ(pet.unlockedCollectionFrameCount(), 1);
+  EXPECT_TRUE(pet.setCollectionFrame(0));
+  EXPECT_TRUE(!pet.setCollectionFrame(1));
+
+  for (int16_t dex = 5; dex <= 13; dex++) pet.registerCaught(dex);
+  EXPECT_EQ(pet.knownDexCount(), 10);
+  EXPECT_EQ(pet.collectionRank(), 1);
+  EXPECT_EQ(pet.unlockedCollectionFrameCount(), 2);
+  EXPECT_TRUE(pet.setCollectionFrame(1));
+  EXPECT_EQ(pet.collectionFrame, 1);
+  EXPECT_TRUE(!pet.setCollectionFrame(2));
+
+  for (int16_t dex = 14; dex <= 28; dex++) pet.registerCaught(dex);
+  EXPECT_EQ(pet.knownDexCount(), 25);
+  EXPECT_EQ(pet.collectionRank(), 2);
+  EXPECT_TRUE(pet.setCollectionFrame(2));
+  EXPECT_EQ(pet.collectionFrame, 2);
+
+  pet.registerCaught(28);  // bereits bekannt: kein doppelter Fortschritt
+  EXPECT_EQ(pet.knownDexCount(), 25);
+}
+
+static void testSpeciesChirpProfilesAreValidAndIndividual() {
+  uint16_t previousSignature = 0;
+  for (int16_t dex = 1; dex <= 151; dex++) {
+    SpeciesChirpProfile profile{};
+    EXPECT_TRUE(speciesChirpProfile(dex, &profile));
+    EXPECT_EQ(profile.count, 3);
+    for (uint8_t i = 0; i < profile.count; i++) {
+      EXPECT_TRUE(profile.notes[i].frequency >= 140 && profile.notes[i].frequency <= 2600);
+      EXPECT_TRUE(profile.notes[i].durationMs >= 30 && profile.notes[i].durationMs <= 100);
+      EXPECT_TRUE(profile.notes[i].volume <= 100);
+      EXPECT_TRUE(profile.notes[i].wave <= CHIRP_NOISE);
+    }
+    uint16_t signature = profile.notes[2].frequency;
+    EXPECT_TRUE(dex == 1 || signature != previousSignature);
+    previousSignature = signature;
+  }
+  SpeciesChirpProfile invalid{};
+  EXPECT_TRUE(!speciesChirpProfile(0, &invalid));
+  EXPECT_TRUE(!speciesChirpProfile(152, &invalid));
+  EXPECT_TRUE(!speciesChirpProfile(25, nullptr));
+}
+
 static void testPetInteractionCooldownAndPersonalityBonus() {
   Pet pet = hatchedPet(1);
   pet.ageMinutes = 20;
@@ -595,6 +643,8 @@ int main() {
   testCaughtDexIsSeparateFromRaisedDex();
   testCaughtPokemonAdvanceDailyCatchGoal();
   testDexRewardsApplyOnceAndCap();
+  testCollectionRanksAndFrameSelection();
+  testSpeciesChirpProfilesAreValidAndIndividual();
   testPetInteractionCooldownAndPersonalityBonus();
   testCatchChanceAndRolls();
   testRespectCatchIsLimitedAndHasNoCareReward();

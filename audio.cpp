@@ -1,4 +1,5 @@
 #include "audio.h"
+#include "species_chirp.h"
 #include "pin_config.h"
 #include <Arduino.h>
 #include <Wire.h>
@@ -22,6 +23,13 @@ static uint8_t gMode = SOUND_FULL;
 static QueueHandle_t gQ = nullptr;
 static volatile bool gBusy = false;
 static uint32_t gLastQueuedAt[4] = {0, 0, 0, 0};
+static uint32_t gLastChirpAt = 0;
+
+enum AudioEventKind : uint8_t { AUDIO_EVENT_SFX = 0, AUDIO_EVENT_CHIRP };
+struct AudioEvent {
+  uint8_t kind;
+  uint8_t value;
+};
 
 // ---- I2C del códec ----
 static bool esW(uint8_t reg, uint8_t val) {
@@ -253,15 +261,33 @@ static void playTone(const Note &note) {
   }
 }
 
+static void playSpeciesChirp(uint8_t dex) {
+  SpeciesChirpProfile profile{};
+  if (!speciesChirpProfile(dex, &profile)) return;
+  for (uint8_t i = 0; i < profile.count; i++) {
+    const SpeciesChirpNote &src = profile.notes[i];
+    Note note = { src.frequency, src.durationMs, src.slide, src.volume, src.wave };
+    playTone(note);
+  }
+}
+
 static void audioTask(void *) {
-  uint8_t id;
+  AudioEvent event;
   for (;;) {
-    if (xQueueReceive(gQ, &id, portMAX_DELAY) && gReady && id < SFX_COUNT && gMode >= SFX_MIN_MODE[id]) {
+    if (!xQueueReceive(gQ, &event, portMAX_DELAY) || !gReady) continue;
+    bool isSfx = event.kind == AUDIO_EVENT_SFX && event.value < SFX_COUNT;
+    bool isChirp = event.kind == AUDIO_EVENT_CHIRP && event.value >= 1 && event.value <= 151 && gMode >= SOUND_MED;
+    if (isSfx && gMode < SFX_MIN_MODE[event.value]) continue;
+    if (isSfx || isChirp) {
       gBusy = true;
       digitalWrite(PA, HIGH);  // enciende el amplificador
       delay(8);                // deja que arranque
-      const SfxDef &d = SFX[id];
-      for (uint8_t i = 0; i < d.len; i++) playTone(d.n[i]);
+      if (isSfx) {
+        const SfxDef &d = SFX[event.value];
+        for (uint8_t i = 0; i < d.len; i++) playTone(d.n[i]);
+      } else {
+        playSpeciesChirp(event.value);
+      }
       delay(gMode == SOUND_FULL ? 90 : 60);  // deja salir la cola del DMA antes de cortar
       digitalWrite(PA, LOW);                 // apaga el amp entre sonidos (evita siseo)
       gBusy = false;
@@ -293,7 +319,7 @@ void audioBegin() {
   if (gMode > SOUND_FULL) gMode = SOUND_FULL;
 
   gReady = true;
-  gQ = xQueueCreate(32, sizeof(uint8_t));
+  gQ = xQueueCreate(32, sizeof(AudioEvent));
   xTaskCreatePinnedToCore(audioTask, "audio", 4096, nullptr, 1, nullptr, 0);
   sfxPlay(SFX_HATCH);  // jingle de arranque (confirma que suena)
 }
@@ -311,7 +337,8 @@ void sfxPlay(uint8_t id) {
     if (now - gLastQueuedAt[gMode] < 650UL && !criticalSfx(id)) return;
   }
   gLastQueuedAt[gMode] = now;
-  xQueueSend(gQ, &id, gMode == SOUND_FULL ? pdMS_TO_TICKS(28) : 0);
+  AudioEvent event = { AUDIO_EVENT_SFX, id };
+  xQueueSend(gQ, &event, gMode == SOUND_FULL ? pdMS_TO_TICKS(28) : 0);
 }
 
 void audioSetEnabled(bool on) {
@@ -334,4 +361,13 @@ uint8_t audioMode() { return gMode; }
 
 bool audioBusy() {
   return gBusy || (gQ && uxQueueMessagesWaiting(gQ) > 0);
+}
+
+void speciesChirpPlay(int16_t dex) {
+  if (!gReady || !gQ || gMode < SOUND_MED || dex < 1 || dex > 151) return;
+  uint32_t now = millis();
+  if (now - gLastChirpAt < 800UL) return;
+  gLastChirpAt = now;
+  AudioEvent event = { AUDIO_EVENT_CHIRP, (uint8_t)dex };
+  xQueueSend(gQ, &event, gMode == SOUND_FULL ? pdMS_TO_TICKS(28) : 0);
 }

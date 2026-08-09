@@ -6,11 +6,11 @@
 set -e
 cd "$(dirname "$0")/.."
 FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-VERSION="1.28-expeditions-items"
+VERSION="1.29-collection-chirps"
 
 echo "Compilando..."
-B=build/esp32.esp32.esp32s3
-mkdir -p "$B"
+B="$(mktemp -d "${TMPDIR:-/tmp}/tamapoke-build.XXXXXX")"
+trap 'rm -rf "$B"' EXIT
 arduino-cli compile --fqbn "$FQBN" --build-path "$B" --export-binaries .
 
 echo "Copiando binarios separados..."

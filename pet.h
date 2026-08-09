@@ -123,6 +123,7 @@ public:
   uint16_t typeHi = 0;     // record del minijuego type match
   uint16_t battleWins = 0, battleLosses = 0;
   uint16_t battleStreak = 0, bestBattleStreak = 0;
+  uint8_t collectionFrame = 0;  // 0=Basis, weitere Rahmen ueber Dex-Meilensteine
   uint32_t lastPetInteractMinute = 0;
   uint8_t dexRewardMask = 0;
   uint32_t dailyGoalDay = 0;
@@ -225,6 +226,9 @@ public:
   uint16_t registeredCount() const;
   uint16_t caughtCount() const;
   uint16_t knownDexCount() const;
+  uint8_t collectionRank() const;
+  uint8_t unlockedCollectionFrameCount() const;
+  bool setCollectionFrame(uint8_t frame);
   void registerCaught(int16_t dex);
   uint8_t nextDexGoal() const;
   uint8_t applyDexRewards();

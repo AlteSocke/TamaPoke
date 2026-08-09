@@ -413,6 +413,28 @@ uint16_t Pet::knownDexCount() const {
   return n;
 }
 
+uint8_t Pet::collectionRank() const {
+  uint16_t known = knownDexCount();
+  if (known >= 151) return 5;
+  if (known >= 100) return 4;
+  if (known >= 50) return 3;
+  if (known >= 25) return 2;
+  if (known >= 10) return 1;
+  return 0;
+}
+
+uint8_t Pet::unlockedCollectionFrameCount() const {
+  return (uint8_t)(collectionRank() + 1);
+}
+
+bool Pet::setCollectionFrame(uint8_t frame) {
+  if (frame >= unlockedCollectionFrameCount()) return false;
+  if (collectionFrame == frame) return true;
+  collectionFrame = frame;
+  save();
+  return true;
+}
+
 uint8_t Pet::nextDexGoal() const {
   static const uint8_t GOALS[] = { 10, 25, 50, 100, 151 };
   uint16_t known = knownDexCount();
@@ -1048,6 +1070,7 @@ void Pet::save() {
   prefs.putUShort("bloss", battleLosses);
   prefs.putUShort("bstk", battleStreak);
   prefs.putUShort("bbstk", bestBattleStreak);
+  prefs.putUChar("cfrm", collectionFrame);
   prefs.putUInt("pimin", lastPetInteractMinute);
   prefs.putUChar("dxrew", dexRewardMask);
   prefs.putUInt("dgday", dailyGoalDay);
@@ -1118,6 +1141,8 @@ void Pet::load() {
   battleLosses = prefs.getUShort("bloss", 0);
   battleStreak = prefs.getUShort("bstk", 0);
   bestBattleStreak = prefs.getUShort("bbstk", 0);
+  collectionFrame = prefs.getUChar("cfrm", 0);
+  if (collectionFrame >= unlockedCollectionFrameCount()) collectionFrame = 0;
   lastPetInteractMinute = prefs.getUInt("pimin", 0);
   dexRewardMask = prefs.getUChar("dxrew", 0);
   dailyGoalDay = prefs.getUInt("dgday", 0);

@@ -3,7 +3,7 @@
 [![Flash in browser](https://img.shields.io/badge/flash-in%20browser-FF6B00?logo=googlechrome&logoColor=white)](https://shadowenemyx.github.io/TamaPoke/web/)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-3D%20case-00AE42?logo=bambulab&logoColor=white)](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)
 ![Board](https://img.shields.io/badge/board-ESP32--S3%20round%20AMOLED-E7352C?logo=espressif&logoColor=white)
-![Firmware](https://img.shields.io/badge/firmware-v1.28--expeditions--items-8A2BE2)
+![Firmware](https://img.shields.io/badge/firmware-v1.29--collection--chirps-8A2BE2)
 ![Code](https://img.shields.io/badge/code-MIT-blue)
 ![Languages](https://img.shields.io/badge/languages-6-FFCB05)
 [![Stars](https://img.shields.io/github/stars/ShadowEnemyx/TamaPoke?style=flat&logo=github&color=yellow)](https://github.com/ShadowEnemyx/TamaPoke/stargazers)
@@ -54,9 +54,13 @@ progression, battery (AXP2101) and PWR button, anti-burn-in dimming,
 **sound (ES8311)**, **6 UI languages (English default)**, **starter choice on
 first run**, a one-click **web installer**, manual and rare optional wild
 battles, one-shot catch attempts after wins, extra minigames, pet events,
-personality/profile cards, daily goals and richer synthesized sound effects.
-The Expedition card adds timed background tours and a small persistent item
-inventory.
+personality/profile cards, daily goals, collector ranks, unlockable cosmetic
+frames and richer synthesized sound effects. The Expedition card adds timed
+background tours and a small persistent item inventory.
+
+> **Species chirps are original synthesized TamaPoke sounds.** They are not
+> original Pokemon game cries, are not sampled or ROM-derived, and no Pokemon
+> audio assets are distributed with this project.
 
 Pending: longer hardware soak testing and polish. See **Roadmap**.
 
@@ -132,6 +136,14 @@ battles while the timer runs.
 - The inventory holds at most **3 of each**: Trail Snack (+25 FOOD, +5 JOY),
   Energy Tonic (+30 ENE), Care Kit (+30 HYG and one poop), and Train Token
   (+2 chosen ATK / DEF / SPD training, capped at 100).
+
+### Collection ranks and frames
+
+Raised and caught entries combine into one **known** Pokédex total. At **10,
+25, 50, 100 and 151** known species, TamaPoke unlocks a new cosmetic collector
+frame and rank. Open the **Profile** card to see your rank and choose any frame
+you have unlocked. Frames are visual only; they do not change battles, catches
+or rewards.
 
 ### Eggs & who you get (spawn odds)
 - **First ever pet:** you pick a starter — **Bulbasaur / Charmander / Squirtle**.
@@ -305,10 +317,10 @@ If one bottoms out it counts as a *slip-up*.
 - 🫧 **Bath** → a foam scene that cleans up the poops.
 
 **Touch gestures:**
-- Tap the creature = pet it (+happiness, bond).
+- Tap the creature = pet it (+happiness, bond; an original species chirp in SND ALL).
 - Horizontal swipe = open the **Pokédex / gallery**.
 - Vertical swipe up = open the **card view** (Profile / Personality / Daily /
-  Box / Battle / Medals / Progress; swipe between them; tap the name on Profile to
+  Box / Battle / Medals / Progress / Expedition; swipe between them; tap the name on Profile to
   rename; on Battle you can start wild battles or open the training bag).
   The Box card can page through caught Pokémon and cycle sorting by Dex, type,
   or raised status.
@@ -324,7 +336,8 @@ If one bottoms out it counts as a *slip-up*.
 ### Card view
 Swipe up from the main screen, then swipe between cards:
 
-- **Profile**: nickname, age, bond/streak, favorite berry info and rename access.
+- **Profile**: nickname, age, bond/streak, favorite berry info, collector rank,
+  frame selection and rename access.
 - **Personality**: play-style personality plus records for ball, catch, memo,
   clean, type and training bag.
 - **Daily**: optional daily goals. Completing them gives small rewards; ignoring
@@ -343,9 +356,11 @@ Swipe down to settings and tap the sound button:
 
 - **TON VIEL / SND ALL**: all feedback, including taps, swipes, menu sounds,
   card/gallery changes, minigame start, training hits, ball bounces/misses,
-  memo sequence steps, occasional main-screen pet chirps and battle/catch effects.
+  memo sequence steps and original synthesized species chirps on pet taps,
+  known Pokédex details and wild-battle starts.
 - **TON MIT / SND MID**: keeps important care, battle, catch, event and result
-  sounds, but removes many tiny repeated UI/minigame noises.
+  sounds plus species chirps for known Pokédex details and wild-battle starts,
+  but removes many tiny repeated UI/minigame noises and pet-tap chirps.
 - **TON WEN / SND LOW**: only major events such as hatch, evolution, medals,
   level, win/loss and catch result.
 - **TON AUS / SND OFF**: silent.
@@ -501,6 +516,10 @@ Nintendo / Game Freak / The Pokémon Company. Non-commercial, personal-use proje
 Charging configuration issue spotted through ShadowEnemyx's hardware test video:
 [TikTok](https://pro.tiktok.com/t/ZGdxJB3nr/).
 Full list in [`CREDITS.md`](CREDITS.md).
+
+Species chirps are authored from TamaPoke's own tone-synthesis parameters. They
+are **not** original Pokemon game cries, samples, ROM-derived data or external
+audio assets.
 
 ## License
 
