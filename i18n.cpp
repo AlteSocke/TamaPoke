@@ -63,6 +63,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ATQ", "DEF", "VEL", "AL MAX",
     "COLECCION", "MARCO %u/%u", "MARCO NUEVO!",
     "ENTRENADOR", "EXPLORADOR", "COLECCIONISTA", "INVESTIGADOR", "MAESTRO", "COMPLETO",
+    "MIRA LA SECUENCIA", "TU TURNO %u/%u", "ERA ESTE!",
   },
   // ---------------- EN ----------------
   {
@@ -119,6 +120,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ATK", "DEF", "SPD", "MAXED",
     "COLLECTION", "FRAME %u/%u", "NEW FRAME!",
     "TRAINER", "SCOUT", "COLLECTOR", "RESEARCHER", "MASTER", "COMPLETE",
+    "WATCH THE SEQUENCE", "YOUR TURN %u/%u", "THIS ONE!",
   },
   // ---------------- FR ----------------
   {
@@ -175,6 +177,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ATQ", "DEF", "VIT", "MAX",
     "COLLECTION", "CADRE %u/%u", "NOUVEAU CADRE!",
     "DRESSEUR", "ECLAIREUR", "COLLECTIONNEUR", "CHERCHEUR", "MAITRE", "COMPLET",
+    "REGARDE LA SUITE", "A TOI %u/%u", "C'ETAIT LUI!",
   },
   // ---------------- DE ----------------
   {
@@ -231,6 +234,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ANG", "VER", "INI", "MAX",
     "SAMMLUNG", "RAHMEN %u/%u", "NEUER RAHMEN!",
     "TRAINER", "SCOUT", "SAMMLER", "FORSCHER", "MEISTER", "KOMPLETT",
+    "MERKE DIR DIE FOLGE", "DEINE REIHE %u/%u", "DAS WAR RICHTIG!",
   },
   // ---------------- IT ----------------
   {
@@ -287,6 +291,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ATT", "DIF", "VEL", "MAX",
     "COLLEZIONE", "CORNICE %u/%u", "NUOVA CORNICE!",
     "ALLENATORE", "ESPLORATORE", "COLLEZIONISTA", "RICERCATORE", "MAESTRO", "COMPLETA",
+    "GUARDA LA SEQUENZA", "TOCCA A TE %u/%u", "ERA QUESTO!",
   },
   // ---------------- PT ----------------
   {
@@ -343,6 +348,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ATQ", "DEF", "VEL", "MAX",
     "COLECAO", "MOLDURA %u/%u", "NOVA MOLDURA!",
     "TREINADOR", "EXPLORADOR", "COLECIONADOR", "PESQUISADOR", "MESTRE", "COMPLETO",
+    "VEJA A SEQUENCIA", "SUA VEZ %u/%u", "ERA ESTE!",
   },
 };
 

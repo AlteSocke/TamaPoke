@@ -27,7 +27,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "1.29-collection-chirps"
+#define FW_VERSION "1.29.1-memo-guide"
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
 
@@ -117,6 +117,9 @@ uint8_t memoSeq[14] = { 0 };
 uint8_t memoLen = 0, memoShow = 0, memoInput = 0, memoRounds = 0;
 uint32_t memoNextAt = 0;
 bool memoShowing = false;
+int8_t memoActivePad = -1, memoFlashPad = -1, memoHintPad = -1;
+bool memoFlashGood = false;
+uint32_t memoFlashUntil = 0, memoFailUntil = 0, memoTurnUntil = 0;
 int16_t cleanX[4] = { 0 }, cleanY[4] = { 0 };
 bool cleanAlive[4] = { false };
 uint32_t cleanUntil = 0, cleanSpawnAt = 0;
@@ -1551,8 +1554,11 @@ void startMemoRound() {
   if (memoLen < 14) memoSeq[memoLen++] = random(4);
   memoShow = 0;
   memoInput = 0;
+  memoActivePad = -1;
+  memoHintPad = -1;
   memoShowing = true;
   memoNextAt = millis() + 350;
+  memoTurnUntil = 0;
 }
 
 void startMemoGame() {
@@ -1566,6 +1572,9 @@ void startMemoGame() {
   gameGain = 0;
   memoLen = 0;
   memoRounds = 0;
+  memoFlashPad = -1;
+  memoHintPad = -1;
+  memoFlashUntil = memoFailUntil = memoTurnUntil = 0;
   startMemoRound();
   sfxPlay(SFX_GAME_START);
 }
@@ -1750,18 +1759,29 @@ int memoPadAt(int16_t x, int16_t y) {
   return -1;
 }
 
+void memoPadSound(uint8_t pad) {
+  if (pad < 4) sfxPlay((uint8_t)(SFX_MEMO_PAD_0 + pad));
+}
+
 void memoTap(int16_t x, int16_t y) {
   if (gameOverUntil) return;
   if (y < 72) { gameOpen = false; sfxPlay(SFX_TAP); return; }
-  if (memoShowing) return;
+  if (memoShowing || memoFailUntil || millis() < memoTurnUntil) return;
   int pad = memoPadAt(x, y);
   if (pad < 0) return;
   if (pad != memoSeq[memoInput]) {
+    memoFlashPad = pad;
+    memoFlashGood = false;
+    memoFlashUntil = millis() + 620;
+    memoHintPad = memoSeq[memoInput];
+    memoFailUntil = memoFlashUntil;
     sfxPlay(SFX_MINIGAME_BAD);
-    finishMemoGame();
     return;
   }
-  sfxPlay(SFX_MINIGAME_OK);
+  memoFlashPad = pad;
+  memoFlashGood = true;
+  memoFlashUntil = millis() + 180;
+  memoPadSound((uint8_t)pad);
   memoInput++;
   if (memoInput >= memoLen) {
     memoRounds++;
@@ -2076,15 +2096,31 @@ void renderCatchGame() {
 }
 
 void stepMemoGame() {
-  if (!memoShowing || millis() < memoNextAt) return;
-  sfxPlay(SFX_MEMO_STEP);
-  memoShow++;
-  if (memoShow >= memoLen) {
-    memoShowing = false;
-    memoInput = 0;
-  } else {
-    memoNextAt = millis() + 520;
+  uint32_t now = millis();
+  if (memoFailUntil) {
+    if (now >= memoFailUntil) {
+      memoFailUntil = 0;
+      memoHintPad = -1;
+      finishMemoGame();
+    }
+    return;
   }
+  if (!memoShowing || now < memoNextAt) return;
+  if (memoActivePad >= 0) {
+    memoActivePad = -1;
+    memoShow++;
+    if (memoShow >= memoLen) {
+      memoShowing = false;
+      memoInput = 0;
+      memoTurnUntil = now + 520;
+    } else {
+      memoNextAt = now + 150;
+    }
+    return;
+  }
+  memoActivePad = memoSeq[memoShow];
+  memoPadSound((uint8_t)memoActivePad);
+  memoNextAt = now + 480;
 }
 
 void renderMemoGame() {
@@ -2111,12 +2147,28 @@ void renderMemoGame() {
   const int16_t px[4] = { 142, 324, 142, 324 };
   const int16_t py[4] = { 164, 164, 318, 318 };
   const uint16_t col[4] = { UI_BAR_BAD, UI_BAR_WARN, 0x4C98, UI_BAR_OK };
-  int active = memoShowing ? memoSeq[memoShow] : -1;
+  int active = memoShowing ? memoActivePad : (memoFailUntil ? memoHintPad : -1);
   for (int i = 0; i < 4; i++) {
-    uint16_t fill = i == active ? UI_WHITE : col[i];
+    uint16_t fill = i == active ? lerp565(col[i], UI_WHITE, 5, 8) : col[i];
     gfx->fillCircle(px[i], py[i], 48, fill);
     gfx->drawCircle(px[i], py[i], 52, ink);
+    if (i == active) {
+      int pulse = 56 + (int)((millis() / 70) % 5);
+      gfx->drawCircle(px[i], py[i], pulse, col[i]);
+    }
+    if (i == memoFlashPad && millis() < memoFlashUntil) {
+      gfx->drawCircle(px[i], py[i], 60, memoFlashGood ? UI_BAR_OK : UI_BAR_BAD);
+      gfx->drawCircle(px[i], py[i], 64, memoFlashGood ? UI_BAR_OK : UI_BAR_BAD);
+    }
   }
+  char phase[28];
+  if (memoFailUntil) snprintf(phase, sizeof(phase), "%s", T(S_MEMO_WRONG));
+  else if (memoShowing) snprintf(phase, sizeof(phase), "%s", T(S_MEMO_WATCH));
+  else snprintf(phase, sizeof(phase), T(S_MEMO_TURN_FMT), memoInput + 1, memoLen);
+  gfx->setTextColor(memoFailUntil ? UI_BAR_BAD : (memoShowing ? UI_BAR_WARN : UI_BAR_OK));
+  gfx->setTextSize(2);
+  gfx->setCursor(CX - (int)strlen(phase) * 6, 112);
+  gfx->print(phase);
   gfx->flush();
 }
 

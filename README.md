@@ -3,7 +3,7 @@
 [![Flash in browser](https://img.shields.io/badge/flash-in%20browser-FF6B00?logo=googlechrome&logoColor=white)](https://shadowenemyx.github.io/TamaPoke/web/)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-3D%20case-00AE42?logo=bambulab&logoColor=white)](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)
 ![Board](https://img.shields.io/badge/board-ESP32--S3%20round%20AMOLED-E7352C?logo=espressif&logoColor=white)
-![Firmware](https://img.shields.io/badge/firmware-v1.29--collection--chirps-8A2BE2)
+![Firmware](https://img.shields.io/badge/firmware-v1.29.1--memo--guide-8A2BE2)
 ![Code](https://img.shields.io/badge/code-MIT-blue)
 ![Languages](https://img.shields.io/badge/languages-6-FFCB05)
 [![Stars](https://img.shields.io/github/stars/ShadowEnemyx/TamaPoke?style=flat&logo=github&color=yellow)](https://github.com/ShadowEnemyx/TamaPoke/stargazers)
@@ -110,8 +110,10 @@ Tap **Play** to open a small menu:
 - **CATCH**: tap the appearing berry/icon before it disappears. Targets vanish
   faster as your score rises; 3 mistakes or the timer ends the run. Rewards joy
   and SPEED training, with small food/energy cost.
-- **MEMO**: watch the 4 pads flash, then repeat the sequence. Each cleared round
-  adds one more step. Rewards DEFENSE training plus small joy/bond.
+- **MEMO**: watch and hear the 4 pads flash, then repeat the sequence during the
+  clear `YOUR TURN` phase. Each pad has its own tone; correct taps get a green
+  ring, and a mistake briefly shows the expected pad before the result. Each
+  cleared round adds one more step. Rewards DEFENSE training plus small joy/bond.
 - **CLEAN**: tap dirt spots before the timer ends. It improves hygiene, joy and
   may clean one poop, while costing a little energy.
 - **TYPE**: pick the type that is strong against the shown enemy type. It trains

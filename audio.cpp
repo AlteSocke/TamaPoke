@@ -124,6 +124,10 @@ static const Note N_GAME_START[]   = {TRI(659, 58, 72), TRI(880, 64, 78), SQ(117
 static const Note N_BALL_BOUNCE[]  = {SL(820, 42, 520, 72, W_SQUARE)};
 static const Note N_BALL_MISS[]    = {NS(55, 56), SL(360, 110, 210, 68, W_SOFT)};
 static const Note N_MEMO_STEP[]    = {SQ(1047, 54, 68)};
+static const Note N_MEMO_PAD_0[]   = {SOFT(349, 82, 76)};
+static const Note N_MEMO_PAD_1[]   = {TRI(523, 82, 76)};
+static const Note N_MEMO_PAD_2[]   = {TRI(784, 82, 76)};
+static const Note N_MEMO_PAD_3[]   = {SQ(1047, 82, 76)};
 static const Note N_ATTACK_QUICK[] = {SL(980, 42, 1320, 90, W_TRI), SQ(1760, 38, 82)};
 static const Note N_ATTACK_HEAVY[] = {NS(36, 46), SL(330, 74, 700, 92, W_SQUARE), SQ(880, 52, 86)};
 static const Note N_ENEMY_HIT[]    = {SL(300, 70, 190, 82, W_SQUARE), NS(38, 44)};
@@ -144,6 +148,7 @@ static const SfxDef SFX[SFX_COUNT] = {
   {N_BATTLE_WIN, 4}, {N_BATTLE_LOSS, 3}, {N_CATCH_OK, 3}, {N_CATCH_FAIL, 4},
   {N_DAILY_GOAL, 4}, {N_EVENT_SPARKLE, 5}, {N_REST, 2}, {N_COUNTER, 4},
   {N_MENU, 2}, {N_GAME_START, 3}, {N_BALL_BOUNCE, 1}, {N_BALL_MISS, 2}, {N_MEMO_STEP, 1},
+  {N_MEMO_PAD_0, 1}, {N_MEMO_PAD_1, 1}, {N_MEMO_PAD_2, 1}, {N_MEMO_PAD_3, 1},
   {N_ATTACK_QUICK, 2}, {N_ATTACK_HEAVY, 3}, {N_ENEMY_HIT, 2}, {N_EFFECTIVE, 3},
   {N_WEAK_HIT, 2}, {N_MINIGAME_OK, 2}, {N_MINIGAME_BAD, 2}, {N_LOW_HP, 3},
   {N_EXPEDITION_START, 3}, {N_EXPEDITION_FOUND, 4}, {N_EXPEDITION_CLAIM, 3}, {N_ITEM_USE, 2},
@@ -173,6 +178,10 @@ static const uint8_t SFX_MIN_MODE[SFX_COUNT] = {
   SOUND_FULL, // BALL_BOUNCE
   SOUND_FULL, // BALL_MISS
   SOUND_FULL, // MEMO_STEP
+  SOUND_FULL, // MEMO_PAD_0
+  SOUND_FULL, // MEMO_PAD_1
+  SOUND_FULL, // MEMO_PAD_2
+  SOUND_FULL, // MEMO_PAD_3
   SOUND_FULL, // ATTACK_QUICK
   SOUND_FULL, // ATTACK_HEAVY
   SOUND_FULL, // ENEMY_HIT
