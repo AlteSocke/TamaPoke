@@ -102,6 +102,16 @@ int flashIdxForDex(int16_t dex) {
 #define CY 233
 #define PET_CY 202  // centro vertical del sprite
 
+// minijuego de la bola: boton de salida como circulo pequeno y marcado (antes
+// era toda la franja superior "y < 72", que se solapaba con el area donde
+// tambien se registran los golpes a la bola cerca del borde -> salidas sin
+// querer). Posicion en la esquina superior izquierda, dentro del area util
+// de la pantalla redonda (a ~195px del centro, como los botones del arco
+// inferior) y lejos de donde suele estar la bola.
+#define GAME_EXIT_CX 95
+#define GAME_EXIT_CY 95
+#define GAME_EXIT_R 26
+
 static const uint16_t INK_K = 0x18C4;  // spriteColor('k')
 
 // botones de icono siguiendo el arco inferior de la pantalla redonda
@@ -966,10 +976,10 @@ void respawnBall() {
 
 void gameTap(int16_t x, int16_t y) {
   if (gameOverUntil) return;
-  if (y < 72) {  // tocar la cabecera = abandonar sin premio
-    gameOpen = false;
-    return;
-  }
+  // El golpe a la bola se comprueba SIEMPRE primero: si el toque cae dentro
+  // del radio de acierto (74 px, generoso a proposito para que sea jugable),
+  // cuenta como golpe aunque tambien caiga cerca del boton de salida. Asi un
+  // intento real de golpear la bola arriba nunca se confunde con "abandonar".
   float dx = ballX - x, dy = ballY - y;
   if (dx * dx + dy * dy < 74 * 74) {  // toque a la bola!
     gameScore++;
@@ -983,6 +993,14 @@ void gameTap(int16_t x, int16_t y) {
     hitX = ballX;
     hitY = ballY;
     hitTime = millis();
+    return;
+  }
+  // No fue un golpe: solo abandona si el toque cae dentro del pequeno circulo
+  // negro marcado (esquina superior izquierda), no en cualquier sitio de la
+  // cabecera como antes.
+  float ex = x - GAME_EXIT_CX, ey = y - GAME_EXIT_CY;
+  if (ex * ex + ey * ey < GAME_EXIT_R * GAME_EXIT_R) {
+    gameOpen = false;
   }
 }
 
@@ -1199,6 +1217,13 @@ void renderGame() {
     if (i < 3 - gameMisses) gfx->fillCircle(180 + i * 28, 104, 6, UI_BAR_BAD);
     else gfx->drawCircle(180 + i * 28, 104, 6, UI_TRACK);
   }
+
+  // boton "abandonar": circulo negro pequeno y bien visible (aro claro para
+  // que se vea tambien sobre el fondo nocturno oscuro) -> evita que un golpe
+  // real a la bola cerca del borde se confunda con querer salir del juego.
+  gfx->fillCircle(GAME_EXIT_CX, GAME_EXIT_CY, GAME_EXIT_R, UI_INK);
+  gfx->drawCircle(GAME_EXIT_CX, GAME_EXIT_CY, GAME_EXIT_R, UI_WHITE);
+  gfx->drawCircle(GAME_EXIT_CX, GAME_EXIT_CY, GAME_EXIT_R - 1, UI_WHITE);
 
   if (pmd.loaded) {
     uint8_t act = (ballX > gamePetX + 4) ? PMD_WALKR : (ballX < gamePetX - 4) ? PMD_WALKL : PMD_IDLE;
