@@ -134,11 +134,11 @@ void Pet::tick() {
 
   if (ageMinutes % MINUTES_PER_LEVEL == 0) sfxPlay(SFX_LEVEL);  // subio de nivel (despierto)
 
-  fullness = clamp100(fullness - 2);
+  fullness = clamp100(fullness - 1);  // Balancing: war -2 (weniger Food-Drain, entschaerft Joy-Kaskade < 30)
   energy = clamp100(energy - 1);
   if (fullness > 40 && poops < 3 && random(100) < 15) poops++;
 
-  hygiene = clamp100(hygiene - 1 - 4 * poops);
+  hygiene = clamp100(hygiene - 1 - 2 * poops);  // Balancing: war -1-4*poops (max -7/Min statt -13/Min)
   // el sobrepeso da pereza: la energia cae el doble
   if (weight > 50) energy = clamp100(energy - 1);
   if (weight > 0 && ageMinutes % 3 == 0) weight--;
