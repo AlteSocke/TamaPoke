@@ -14,6 +14,8 @@
 #define CEREMONY_MS 10000UL                // duracion de la despedida en pantalla
 #define FAREWELL_AGE_MIN (3UL * 24 * 60)   // se despide a los 3 dias de juego (en forma final)
 #define RUNAWAY_TICKS 60                   // se escapa tras 1 h con TODO a cero
+#define WARN_STAT_THRESHOLD 15  // pitido de aviso cuando un stat cae a esto o menos (antes del descuido a <=10)
+#define WARN_COOLDOWN_MIN 5     // minutos entre pitidos repetidos mientras siga critico
 
 // ceremonias de fin de ciclo
 enum : uint8_t { CER_NONE = 0, CER_FAREWELL, CER_RUNAWAY, CER_RELEASE };
@@ -162,6 +164,7 @@ private:
   bool eggShiny = false;       // sorpresa sorteada al crear el huevo
   uint8_t eggTaps = 0;
   uint8_t mistakeCooldown = 0;
+  uint8_t warnCooldown = 0;    // pitido de "estadistica critica": evita repetirlo cada minuto
   uint8_t ticksSinceSave = 0;
   bool pendingSave = false;     // guardado periodico pendiente de volcar
   uint8_t evoDeclinedLv = 0;    // "mantener forma": no ofrecer evolucion hasta subir de nivel

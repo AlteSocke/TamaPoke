@@ -167,6 +167,20 @@ void Pet::tick() {
     if (bond > 3) bond -= 3;  // el descuido enfria el vinculo
   }
 
+  // Alarma de estadistica critica: pita ANTES de que sea un descuido, para dar
+  // tiempo a reaccionar. Se repite cada WARN_COOLDOWN_MIN mientras siga critico
+  // (no solo una vez), y se calla en cuanto el stat mas bajo sube por encima
+  // del umbral (cuidado del jugador).
+  if (warnCooldown > 0) warnCooldown--;
+  if (lowestStat() <= WARN_STAT_THRESHOLD) {
+    if (warnCooldown == 0) {
+      sfxPlay(SFX_WARN);
+      warnCooldown = WARN_COOLDOWN_MIN;
+    }
+  } else {
+    warnCooldown = 0;  // ya no esta critico: el proximo aviso pita de inmediato
+  }
+
   checkMedals();  // la evolucion la dispara el usuario (canEvolveNow + tap), no el tick
 
   // abandono total: con TODO a cero durante una hora queda lista para escaparse;

@@ -88,11 +88,12 @@ static const Note N_MEDAL[]  = {{784, 70}, {0, 25}, {784, 70}, {0, 25}, {1047, 2
 static const Note N_DENY[]   = {{300, 110}, {200, 170}};
 static const Note N_BYE[]    = {{784, 150}, {659, 150}, {523, 280}};
 static const Note N_LEVEL[]  = {{784, 70}, {1047, 130}};
+static const Note N_WARN[]   = {{1568, 70}, {0, 50}, {1568, 70}, {0, 50}, {1568, 70}};  // pitido urgente (3x agudo)
 
 struct SfxDef { const Note *n; uint8_t len; };
 static const SfxDef SFX[SFX_COUNT] = {
   {N_TAP, 1}, {N_EAT, 3}, {N_PLAY, 2}, {N_HEART, 2}, {N_HATCH, 4},
-  {N_EVOLVE, 5}, {N_MEDAL, 5}, {N_DENY, 2}, {N_BYE, 3}, {N_LEVEL, 2},
+  {N_EVOLVE, 5}, {N_MEDAL, 5}, {N_DENY, 2}, {N_BYE, 3}, {N_LEVEL, 2}, {N_WARN, 5},
 };
 
 static int16_t buf[256 * 2];  // estéreo intercalado (L=R)
