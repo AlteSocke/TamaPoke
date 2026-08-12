@@ -9,8 +9,16 @@ same one as `tools/send_sd.py`).
 ## Contents
 
 - `index.html` — the page (flashing + sprite loader).
-- `manifest.json` — ESP Web Tools config (points at the firmware).
-- `firmware/tamapoke.bin` — combined firmware, flashable at `0x0`.
+- `manifest.json` — ESP Web Tools config (points at the firmware parts below).
+- `firmware/bootloader.bin`, `firmware/partitions.bin`, `firmware/boot_app0.bin`,
+  `firmware/app.bin` — **separate** files, each flashed at its own offset (`0x0`,
+  `0x8000`, `0xE000`, `0x10000`). Deliberately **not** merged into one blob: the
+  NVS partition (save data, `0x9000`-`0xE000`) sits in the gap between
+  `partitions.bin` and `boot_app0.bin`. Writing a single merged binary across
+  that whole range would erase-then-program the NVS sectors on every flash
+  (that's how NOR flash writes work) and **wipe the pet's save data even
+  without ticking "Erase device"**. Keeping the parts separate means ESP Web
+  Tools never touches that gap during a normal (non-erase) install.
 - `sprites.pak` — all the sprites in one bundle (TPAK), so the page sends them in
   one click. **Generated** by `tools/pack_bundle.py` (gitignored by default — see
   *Hosting the sprites* below).
@@ -20,7 +28,7 @@ same one as `tools/send_sd.py`).
 After changing the firmware or the sprites:
 
 ```bash
-bash tools/build_web.sh        # recompiles -> firmware/tamapoke.bin AND rebuilds sprites.pak
+bash tools/build_web.sh        # recompiles -> firmware/{bootloader,partitions,boot_app0,app}.bin AND rebuilds sprites.pak
 ```
 
 ## Test locally
